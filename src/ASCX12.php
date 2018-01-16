@@ -107,20 +107,22 @@ use Coedition\ASCX12\Catalogs\Segments;
 
 class ASCX12 {
 
-    public $_LOOPS = [];
+    private $_LOOPS = [];
 
-    public $_XMLREP = [
+    private $_XMLREP = [
         '&' => '&amp;'
         ,'<' => '&lt;'
         ,'>' => '&gt;'
         ,'"' => '&quot;'
         ];
 
+    private $_XMLHEAD = '<?xml version="1.0"?><ascx:message xmlns:ascx="http://www.vermonster.com/LIB/xml-ascx12-01/ascx.rdf" xmlns:loop="http://www.vermonster.com/LIB/xml-ascx12-01/loop.rdf">';
+
     private $ST;
     private $DES;
     private $SBS;
+    private $CATALOGS;
 
-    public $_XMLHEAD = '<?xml version="1.0"?><ascx:message xmlns:ascx="http://www.vermonster.com/LIB/xml-ascx12-01/ascx.rdf" xmlns:loop="http://www.vermonster.com/LIB/xml-ascx12-01/loop.rdf">';
 
     /*
     --------------------
@@ -145,6 +147,7 @@ class ASCX12 {
         $this->ST = $st;
         $this->DES = $des;
         $this->SBS = $sbs;
+        $this->CATALOGS = new Catalogs();
     }
     /*
         boolean = $obj->convertfile($input, $output)
@@ -159,103 +162,108 @@ class ASCX12 {
 
         $xmlrpc->convertfile(\*INFILE, \*OUTFILE);
     */
-    public function convertfile($in, $out) {
-        $inhandle = null;
-        $outhandle = null;
-        $bisinfile = null;
-        $bisoutfile = null;
-        $st_check=0;
-        $des_check=0;
+#    public function convertfile($in, $out) {
+#        $inhandle = null;
+#        $outhandle = null;
+#        $bisinfile = null;
+#        $bisoutfile = null;
+#        $st_check=0;
+#        $des_check=0;
+#
+#        $this->_unload_catalog();
+#
+#        $outhandle = $out;
+#        /* @TODO AD error checking if file can be writted or includes wildcards?
+#        if (ref($out) eq "GLOB" or ref(\$out) eq "GLOB"
+#        or ref($out) eq 'FileHandle' or ref($out) eq 'IO::Handle')
+#        {
+#        $outhandle = $out;
+#        }
+#        else
+#        {
+#        local(*XMLOUT);
+#        open (XMLOUT, "> $out") || croak "Cannot open file \"$out\" for writing: $!";
+#        $outhandle = *XMLOUT;
+#        $bisoutfile = 1;
+#        }
+#        */
+#
+#        file_put_contents($outhandle,$this->_XMLHEAD);
+#
+#        //$inhandle = $in;
+#        $inhandle = fopen($in,'r');
+#        /* @TODO AD error checking if file can be written or includes wildcards?
+#        print {$outhandle} $ASCX12::_XMLHEAD;
+#        {
+#        if (ref($in) eq "GLOB" or ref(\$in) eq "GLOB"
+#        or ref($in) eq 'FileHandle' or ref($in) eq 'IO::Handle')
+#        {
+#        $inhandle = $in;
+#        }
+#        else
+#        {
+#        local(*EDIIN);
+#        open (EDIIN, "< $in") || croak "Cannot open file \"$in\" file for reading: $!";
+#        $inhandle = *EDIIN;
+#        $bisinfile = 1;
+#        }
+#
+#        binmode($inhandle);
+#        */
+#
+#        //(my $eos = $self->{ST}) =~ s/^\\/0/;
+#        $eos = preg_replace('/^\\/', '0', $this->ST);
+#
+#        //local $/ = pack("C*", oct($eos));
+#        $_packed = pack("C*", ord($eos));
+#
+#        # Looping per-segment for processing
+#        while ($inhandle)
+#        {
+#        if (!$st_check) { $st_check = 1 if m/$self->{ST}/; }
+#        if (!$des_check) { $des_check = 1 if m/$self->{DES}/; }
+#
+#        chomp;
+#        print {$outhandle} $self->_proc_segment($_);
+#        }
+#        # This is done to close any open loops
+#        # XXX Is there a better way to "run on more time"?
+#        print {$outhandle} $self->_proc_segment('');
+#        }
+#        print {$outhandle} '</ascx:message>';
+#
+#    (close($inhandle) || croak "Cannot close output file \"$out\": $!") if $bisinfile;
+#    (close($outhandle)|| croak "Cannot close input file \"$in\": $!") if $bisoutfile;
+#
+#    croak "EDI Parsing Error:  Segment Terminator \"$self->{ST}\" not found" unless $st_check;
+#    croak "EDI Parsing Error:  Data Element Seperator \"$self->{DES}\" not found" unless $des_check;
+#
+#    return 1;
+#    }
 
-        $this->_unload_catalog();
-
-        $outhandle = $out;
-        /* @TODO AD error checking if file can be writted or includes wildcards?
-        if (ref($out) eq "GLOB" or ref(\$out) eq "GLOB"
-        or ref($out) eq 'FileHandle' or ref($out) eq 'IO::Handle')
-        {
-        $outhandle = $out;
-        }
-        else
-        {
-        local(*XMLOUT);
-        open (XMLOUT, "> $out") || croak "Cannot open file \"$out\" for writing: $!";
-        $outhandle = *XMLOUT;
-        $bisoutfile = 1;
-        }
-        */
-
-        file_put_contents($outhandle,$this->_XMLHEAD);
-
-        $inhandle = $in;
-        /* @TODO AD error checking if file can be written or includes wildcards?
-        print {$outhandle} $ASCX12::_XMLHEAD;
-        {
-        if (ref($in) eq "GLOB" or ref(\$in) eq "GLOB"
-        or ref($in) eq 'FileHandle' or ref($in) eq 'IO::Handle')
-        {
-        $inhandle = $in;
-        }
-        else
-        {
-        local(*EDIIN);
-        open (EDIIN, "< $in") || croak "Cannot open file \"$in\" file for reading: $!";
-        $inhandle = *EDIIN;
-        $bisinfile = 1;
-        }
-
-        binmode($inhandle);
-        */
-
-        //(my $eos = $self->{ST}) =~ s/^\\/0/;
-        $eos = preg_replace('/^\\/', '0', $this->ST);
-
-        //local $/ = pack("C*", oct($eos));
-        $_packed = pack("C*", ord($eos));
-
-        # Looping per-segment for processing
-        while ($inhandle)
-        {
-        if (!$st_check) { $st_check = 1 if m/$self->{ST}/; }
-        if (!$des_check) { $des_check = 1 if m/$self->{DES}/; }
-
-        chomp;
-        print {$outhandle} $self->_proc_segment($_);
-        }
-        # This is done to close any open loops
-        # XXX Is there a better way to "run on more time"?
-        print {$outhandle} $self->_proc_segment('');
-        }
-        print {$outhandle} '</ascx:message>';
-
-    (close($inhandle) || croak "Cannot close output file \"$out\": $!") if $bisinfile;
-    (close($outhandle)|| croak "Cannot close input file \"$in\": $!") if $bisoutfile;
-
-    croak "EDI Parsing Error:  Segment Terminator \"$self->{ST}\" not found" unless $st_check;
-    croak "EDI Parsing Error:  Data Element Seperator \"$self->{DES}\" not found" unless $des_check;
-
-    return 1;
-    }
-
-        =item string = $obj->convertdata($input)
-
+/*
+        string = $obj->convertdata($input)
 
         This method will transform an EDI data stream, returning wellformed XML.
 
         my $xmlrpc = new ASCX12();
         my $xml = $xmlrpc->convertdata($binary_edi_data);
+*/
+        public function convertdata($in) {
 
+        //croak "EDI Parsing Error:  Segment Terminator \"$self->{ST}\" not found" unless ($in =~ m/$self->{ST}/);
+        if (!(str_pos($this->ST, $in) !== false)) {
+            die("EDI Parsing Error:  Segment Terminator '$self->ST' not found");
+        }
+        //croak "EDI Parsing Error:  Data Element Seperator \"$self->{DES}\" not found" unless ($in =~ m/$self->{DES}/);
+        if (!(str_pos($this->DES, $in) !== false)) {
+            die("EDI Parsing Error:  Data Element Seperator '$self->DES' not found");
+        }
 
-        =cut
-        sub convertdata
-        {
-        my ($self, $in) = @_;
-
-        croak "EDI Parsing Error:  Segment Terminator \"$self->{ST}\" not found" unless ($in =~ m/$self->{ST}/);
-        croak "EDI Parsing Error:  Data Element Seperator \"$self->{DES}\" not found" unless ($in =~ m/$self->{DES}/);
-
-        my $out = $ASCX12::_XMLHEAD;
-        (my $eos = $self->{ST}) =~ s/^\\/0/;
+        $out = $this->_XMLHEAD;
+        //(my $eos = $self->{ST}) =~ s/^\\/0/;
+        preg_replace('/^\\/', 0, $this->ST,$matches));
+        $eos = $matches[0];
         my @data = split(pack("C*", oct($eos)), $in);
         foreach(@data)
         {
@@ -266,130 +274,115 @@ class ASCX12 {
         return $out;
         }
 
-        =item string = XMLENC($string)
-
+    /*
+        string = XMLENC($string)
 
         Static public method used to encode and return data suitable for ASCII XML CDATA
 
         $xml_ready_string = ASCX12::XMLENC($raw_data);
-
-        =cut
-        sub XMLENC
-        {
-        my $str = $_[0];
-        if ($str)
-        {
-        $str =~ s/([&<>"])/$_XMLREP{$1}/ge;    # relace any &<>" characters
-        $str =~ s/[\x80-\xff]//ge;             # get rid on any non-ASCII characters
-        $str =~ s/[\x01-\x1f]//ge;             # get rid on any non-ASCII characters
-        }
-        return $str;
+    */
+        public function XMLENC($str = null) {
+            if (!is_null($str)) {
+                $str =~ s/([&<>"])/$_XMLREP{$1}/ge;    # relace any &<>" characters
+                $str =~ s/[\x80-\xff]//ge;             # get rid on any non-ASCII characters
+                $str =~ s/[\x01-\x1f]//ge;             # get rid on any non-ASCII characters
+            }
+            return $str;
         }
 
-        =back
-
-        =head2 Private Methods
-
-        =over 4
-
-        =item string = _proc_segment($segment_data);
-
+    /*
+        ----------------
+        Private Methods
+        ----------------
+        string = _proc_segment($segment_data);
 
         This is an internal private method that processes a segment using $LOOPNEST.
         It is called by C<convertfile()> or C<convertdata()> while looping per-segment.
+    */
+        private function _proc_segment($segment) {
+            if (isset($this->CATALOGS->IS_CHILD)) {
+                return $this->_proc_segment_in_child($segment);
+            }
+            $segment = str_replace("\n",'',$segment);
+            if (preg_match('/[0-9A-Za-z]*/',$segment,$matches)) {
+                my ($segcode, @elements) = split(/$self->{DES}/, $segment);
 
-        =cut
-        sub _proc_segment
-        {
-        my ($self, $segment) = @_;
-        if (defined	 $ASCX12::Catalogs::IS_CHILD) {
-        return $self->_proc_segment_in_child($segment);
+                # BEGIN load additional segments/elements
+                no strict;
+                my $filename = './ASCX12/' . $elements[0] . '.pm';
+                my $modname = 'ASCX12::' . $elements[0];
+                if (-e $filename)
+                {
+                require $filename;
+                $modname->import(qw($temp_SEGMENTS $temp_ELEMENTS));
+
+                # add the temp_SEGMENTS to the $SEGMENTS
+                foreach my $key (keys(%$temp_SEGMENTS))
+                {
+                $SEGMENTS->{$key} = $temp_SEGMENTS->{$key};
+                }
+                # add the temp_SEGMENTS to the $ELEMENTS
+                foreach my $key (keys(%$temp_ELEMENTS))
+                {
+                $ELEMENTS->{$key} = $temp_ELEMENTS->{$key};
+                }
+                #            use Data::Dumper;
+                #            print Dumper($ELEMENTS);
+                #            exit;
+                }
+                use strict;
+                # END load additional segments/elements
+
+                if ($segcode and $segcode eq "ST")
+                {
+                $self->_unload_catalog();
+                $self->load_catalog($elements[0]);
+                ## IS_CHILD not defined until after Catalog loaded
+                ## Use alternate parsing starting with "ST" segment
+                if (defined	 $ASCX12::Catalogs::IS_CHILD) {
+                return $self->_proc_segment_in_child($segment);
+                }
+                }
+
+                # check to see if we need to close a loop
+                my $curloop = $ASCX12::Segments::SEGMENTS->{$segcode}[3] if $segcode;
+                my $xml = '';
+                if (my $tmp = $self->_closeloop($curloop, $self->{lastloop}, $segcode)) { $xml .= $tmp; }
+                if (@elements)
+                {
+                # check to see if we need to open a loop
+                if (my $tmp = $self->_openloop($curloop, $self->{lastloop})) { $xml .= $tmp; }
+
+                # now the standard segment (and elements)
+                $xml .= '<segm code="'.ASCX12::XMLENC($segcode).'"';
+                $xml .= ' desc="'.ASCX12::XMLENC($ASCX12::Segments::SEGMENTS->{$segcode}[0]).'"' if $ASCX12::Segments::SEGMENTS->{$segcode};
+                $xml .= '>';
+
+                # make our elements
+                $xml .= $self->_proc_element($segcode, @elements);
+
+                # close the segment
+                $xml .= '</segm>';
+
+                # keep track
+                $self->{lastloop} = $curloop;
+                }
+                return $xml;
+            }
         }
-        $segment =~ s/\n//g;
-        if ($segment =~ m/[0-9A-Za-z]*/)
-        {
-        my ($segcode, @elements) = split(/$self->{DES}/, $segment);
-
-        # BEGIN load additional segments/elements
-        no strict;
-        my $filename = './ASCX12/' . $elements[0] . '.pm';
-        my $modname = 'ASCX12::' . $elements[0];
-        if (-e $filename)
-        {
-        require $filename;
-        $modname->import(qw($temp_SEGMENTS $temp_ELEMENTS));
-
-        # add the temp_SEGMENTS to the $SEGMENTS
-        foreach my $key (keys(%$temp_SEGMENTS))
-        {
-        $SEGMENTS->{$key} = $temp_SEGMENTS->{$key};
-        }
-        # add the temp_SEGMENTS to the $ELEMENTS
-        foreach my $key (keys(%$temp_ELEMENTS))
-        {
-        $ELEMENTS->{$key} = $temp_ELEMENTS->{$key};
-        }
-        #            use Data::Dumper;
-        #            print Dumper($ELEMENTS);
-        #            exit;
-        }
-        use strict;
-        # END load additional segments/elements
-
-        if ($segcode and $segcode eq "ST")
-        {
-        $self->_unload_catalog();
-        $self->load_catalog($elements[0]);
-        ## IS_CHILD not defined until after Catalog loaded
-        ## Use alternate parsing starting with "ST" segment
-        if (defined	 $ASCX12::Catalogs::IS_CHILD) {
-        return $self->_proc_segment_in_child($segment);
-        }
-        }
-
-        # check to see if we need to close a loop
-        my $curloop = $ASCX12::Segments::SEGMENTS->{$segcode}[3] if $segcode;
-        my $xml = '';
-        if (my $tmp = $self->_closeloop($curloop, $self->{lastloop}, $segcode)) { $xml .= $tmp; }
-        if (@elements)
-        {
-        # check to see if we need to open a loop
-        if (my $tmp = $self->_openloop($curloop, $self->{lastloop})) { $xml .= $tmp; }
-
-        # now the standard segment (and elements)
-        $xml .= '<segm code="'.ASCX12::XMLENC($segcode).'"';
-        $xml .= ' desc="'.ASCX12::XMLENC($ASCX12::Segments::SEGMENTS->{$segcode}[0]).'"' if $ASCX12::Segments::SEGMENTS->{$segcode};
-        $xml .= '>';
-
-        # make our elements
-        $xml .= $self->_proc_element($segcode, @elements);
-
-        # close the segment
-        $xml .= '</segm>';
-
-        # keep track
-        $self->{lastloop} = $curloop;
-        }
-        return $xml;
-        }
-        }
-
-        =item string = _proc_segment_in_child($segment_data);
+/*
+        string = _proc_segment_in_child($segment_data);
 
 
         This is an internal private method that processes a segment using $IN_CHILD.
         It is called by C<_proc_segment()> when $IN_CHILD is defined.
-
-        =cut
-        sub _proc_segment_in_child
-        {
-        my ($self, $segment) = @_;
-        $segment =~ s/\n//g;
-        $self->{lastloop} ||= '';
-        if ($segment =~ m/[0-9A-Za-z]*/)
-        {
-        my ($segcode, @elements) = split(/$self->{DES}/, $segment);
-        if ($segcode and $segcode eq "ST")
+*/
+        private function _proc_segment_in_child($segment) {
+            $segment = str_replace("\n",'',$segment);
+            $this->lastloop ||= '';
+            if (preg_match('/[0-9A-Za-z]*/', $segment, $matches) {
+                my ($segcode, @elements) = split(/$self->{DES}/, $segment);
+                if ($segcode and $segcode eq "ST")
         {
 
         ## warn "segcode = $segcode\n";
@@ -444,187 +437,174 @@ class ASCX12 {
         }
         }
 
-        =item string = _proc_element($segment_code, @elements)
-
+/*
+        string = _proc_element($segment_code, @elements)
 
         This is a private method called by C<_proc_segment()>.  Each segment consists of
         elements, this is where they are processed.
-
-        =cut
-        sub _proc_element
-        {
-        my ($self, $segcode, @elements) = @_;
-        my $i = 1;
-        my $xml = '';
-        foreach (@elements)
-        {
-        if ($_ =~ /[0-9A-Za-z]/)
-        {
-        my $elename;
-        $elename = $segcode.$i if $i >= 10;
-        $elename = $segcode.'0'.$i if $i < 10;
-        $xml .= '<elem code="'.ASCX12::XMLENC($elename).'"';
-        $xml .= ' desc="'.ASCX12::XMLENC($ASCX12::Segments::ELEMENTS->{$elename}[0]).'"' if $ASCX12::Segments::ELEMENTS->{$elename};
-        $xml .= '>'.ASCX12::XMLENC($_).'</elem>';
-        }
-        $i++;
-        }
-        return $xml;
+*/
+        private function _proc_element($segcode, $elements) {
+            //my ($self, $segcode, @elements) = @_;
+            $i = 1;
+            $xml = '';
+            foreach ($elements as $element) {
+                if (preg_match('/[0-9A-Za-z]/',$element,$matches) {
+                    $elename = null;
+                    $elename = ($i >= 10) ? $segcode . $i : $segcode . '0' . $i;
+                    $xml .= '<elem code="'. $this->XMLENC($elename) . '"';
+                    if (Segments::$ELEMENTS[$elename]) {
+                        $xml .= ' desc="' . $this->XMLENC(Segments::$ELEMENTS[$elename][0]) . '"';
+                    }
+                    $xml .= '>' . $this->XMLENC($matches[0]) . '</elem>';
+                }
+                $i++;
+            }
+            return $xml;
         }
 
 
-        =item string = _openloop($loop_to_open, $last_opened_loop)
+        /*
+        string = _openloop($loop_to_open, $last_opened_loop)
 
 
         This is an internal private method.  It will either open a loop if we can
         or return nothing.
-
-        =cut
-        sub _openloop
-        {
-        my ($self, $newloop, $lastloop) = @_;
-        if (ASCX12::_CANHAVE($lastloop, $newloop))
-        {
-        push (@_LOOPS, $newloop);
-        return '<'.ASCX12::XMLENC($newloop).'>';
-        }
-        return;
+        */
+        private function _openloop($newloop, $lastloop) {
+            if ($this->_CANHAVE($lastloop, $newloop)) {
+                array_push($this->_LOOPS, $newloop);
+                return '<'.$this->XMLENC($newloop).'>';
+            }
+            return null;
         }
 
-        =item void = _closeloop($loop_to_close, $last_opened_loop, $current_segment, $trigger)
-
+/*
+        void = _closeloop($loop_to_close, $last_opened_loop, $current_segment, $trigger)
 
         This routine is a private method.  It will recurse to close any open loops.
-
-        =cut
-        sub _closeloop
-        {
-        my ($self, $newloop, $lastloop, $currentseg, $once) = @_;
-        $lastloop ||= '';
-        $once = 0 unless $once;
-        my $xml;
-        # Case when there are two consecutive loops
-        if ($newloop and $lastloop and $currentseg eq $lastloop and ($currentseg ne ""))
-        {
-        $xml = $self->_execclose($lastloop);
-        return $xml;
-        }
-        # "Standard Case"
-        elsif (ASCX12::_CANHAVE($newloop, $lastloop))
-        {
-        $xml = $self->_execclose($lastloop);
-        return $xml;
-        }
-        # Recusrively close loops
-        else
-        {
-        my @parent_loops_to_close = ();
-        if (@_LOOPS)
-        {
-        foreach my $testloop (reverse @_LOOPS) #Close in reverse order
-        {
-        # found a loop, see which ones we ough to close
-        if ($testloop eq $newloop)
-        {
-        if (@parent_loops_to_close)
-        {
-        foreach my $closeme (@parent_loops_to_close)
-        {
-        $xml .= $self->_execclose($closeme) if $closeme;
-        }
-        # See if the current loop ought to be closed
-        if ($once != 1)
-        {
-        if (my $tmp = $self->_closeloop($newloop, $self->{lastloop}, $currentseg, 1))
-        {
-        $xml .= $tmp;
-        }
-        }
-        return $xml;
-        }
-        }
-        # Push into the loops to close
-        else
-        {
-        if ($testloop) { push (@parent_loops_to_close, $testloop); }
-        }
-        }
-        }
-        }
-        return;
+*/
+        private function _closeloop($newloop, $lastloop, $currentseg, $once = 0) {
+            $lastloop ||= '';
+            $xml = null;
+            # Case when there are two consecutive loops
+            if ($newloop && $lastloop && $currentseg == $lastloop && ($currentseg != '')) {
+                $xml = $this->_execclose($lastloop);
+                return $xml;
+            }
+            # "Standard Case"
+            else if ($this->_CANHAVE($newloop, $lastloop)) {
+                $xml = $this->_execclose($lastloop);
+                return $xml;
+            }
+            # Recusrively close loops
+            else {
+                $parent_loops_to_close = [];
+                if (count($this->_LOOPS)) {
+                    #Close in reverse order
+                    foreach (array_reverse($this->_LOOPS) as $testloop) {
+                        # found a loop, see which ones we ough to close
+                        if ($testloop == $newloop) {
+                            if ($parent_loops_to_close) {
+                                foreach ($parent_loops_to_close as $closeme) {
+                                    if ($closeme) {
+                                        $xml .= $this->_execclose($closeme);
+                                    }
+                                }
+                                # See if the current loop ought to be closed
+                                if ($once != 1) {
+                                    if ($tmp = $this->_closeloop($newloop, $this->lastloop, $currentseg, 1)) {
+                                        $xml .= $tmp;
+                                    }
+                                }
+                                return $xml;
+                            }
+                        }
+                        # Push into the loops to close
+                        else {
+                            if ($testloop) {
+                                array_push($parent_loops_to_close, $testloop);
+                            }
+                        }
+                    }
+                }
+            }
+            return;
         }
 
-        =item string = _execclose($loop_to_close)
-
+        /*
+        string = _execclose($loop_to_close)
 
         Private internal method to actually return the XML that signifies a closed
         loop.  It is called by C<_closeloop()>.
+        */
 
-        =cut
-        sub _execclose
-        {
-        my ($self, $loop) = @_;
-        return unless $loop;
-        if ($loop =~ /[A-Za-z0-9]*/)
-        {
-        pop @_LOOPS;
-        $self->{lastloop} = $_LOOPS[-1];
-        return '</'.ASCX12::XMLENC($loop).'>' if ASCX12::XMLENC($loop);
-    }
-    }
+        private function _execclose($loop = null) {
+            if (is_null($loop)) {
+                return;
+            }
 
-    =item void = _unload_catalog()
+            if (preg_match('/[A-Za-z0-9]*/', $loop, $matches))
+            {
+                array_pop($this->_LOOPS);
+                $this->lastloop = $this->_LOOPS[-1];
+                return ($this->XMLENC($loop)) ? '</'.$this->XMLENC($loop).'>' : '';
+            }
+        }
 
+/*
+    void = _unload_catalog()
 
     Private method that clears out catalog data and loads standard ASCX12 structure.
     Also initializes ISA and GS data common to all Catalogs.
-
-    =cut
-    sub _unload_catalog
-    {
-    my $self = shift;
-    $ASCX12::Catalogs::LOOPNEST = ();
-    $ASCX12::Catalogs::IS_CHILD = undef;
-    $self->load_catalog(0);
+*/
+    private function _unload_catalog() {
+    //$ASCX12::Catalogs::LOOPNEST = ();
+    //$ASCX12::Catalogs::IS_CHILD = undef;
+    $this->CATALOGS->LOOPNEST = [];
+    $this->CATALOGS->IS_CHILD = null;
+    $this->load_catalog(0);
     }
 
-    =item boolean = _CANHAVE($parent_loop, $child_loop)
-
+/*
+    boolean = _CANHAVE($parent_loop, $child_loop)
 
     This is a private static method.  It uses the rules in the L<ASCX12::Catalogs|ASCX12::Catalogs>
     to determine if a parent is allowed to have the child loop. Returns C<0> or C<1>.
+*/
+    private function _CANHAVE($parent, $child) {
+        # root-level can have anything
+        if (!$parent) {
+            return 1;
+        }
 
-    =cut
+        if(!isset($child || is_null($child) || !$child) {
+            return 0;
+        }
 
-    sub _CANHAVE
-    {
-    my ($parent, $child) = @_;
-    if (!$parent) { return 1; } # root-level can have anything
-    return 0 unless $child;
-    foreach (@{$ASCX12::Catalogs::LOOPNEST->{$parent}}) { if ($_ eq $child) { return 1; } }
-    return 0;
+        foreach ($this->CATALOGS->LOOPNEST[$parent] as $value) {
+            if ($value == $child) {
+                return 1;
+            }
+        }
+        return 0;
     }
 
-    =back
-
-    =head1 TODO
-
+    /*
+    @TODO:
     Here are some things that would make this module even better.  They are in no particular order:
 
-    =over 4
-
-    =item * Error Handling
+    * Error Handling
 
     Maybe throw in an error object to keep track of things
 
-    =item * Encoding Support
+    * Encoding Support
 
     Anyone that could review to make sure we are using the correct encodings
     We basically read in the EDI file in binary and use the ASCII HEX-equivalent for the
     separators.  Many EDI-producing systems use EBCDIC and not UTF-8 so be careful when
     specifying the values.
 
-    =item * B<Live> Transaction Set (Catalog) Library
+    * B<Live> Transaction Set (Catalog) Library
 
         Make a live repository of transaction set data (catalogs).  I'd really like use XML to describe
         each catalog and import them to local dbm files or tied hashes during install and via an update
@@ -637,40 +617,9 @@ class ASCX12 {
         the US Bankruptcy Courts (L<http://www.ebnuscourts.com/documents/edi.adp>).
 
 
-        =item * XML Documentation
+        * XML Documentation
 
         Create a DTD and maybe even an XML Schema for the XML output.  There ought to be better
         documentation here.
-
-        =back
-
-
-        =head1 AUTHORS
-
-        Brian Kaney <F<brian@vermonster.com>>, Jay Powers <F<jpowers@cpan.org>>
-
-        L<http://www.vermonster.com/>
-
-        Copyright (c) 2004 Vermonster LLC.  All rights reserved.
-
-        This library is free software. You can redistribute it and/or modify
-        it under the terms of the GNU Lesser General Public License as
-        published by the Free Software Foundation; either version 2 of the
-        License, or (at your option) any later version.
-
-        Basically you may use this library in commercial or non-commercial applications.
-        However, If you make any changes directly to any files in this library, you are
-        obligated to submit your modifications back to the authors and/or copyright holder.
-        If the modification is suitable, it will be added to the library and released to
-        the back to public.  This way we can all benefit from each other's hard work!
-
-        If you have any questions, comments or suggestions please contact the author.
-
-        =head1 SEE ALSO
-
-        L<Carp>, L<ASCX12::Catalogs> and L<ASCX12::Segments>
-
-                    =cut
-                    1;
-
+    */
 }
