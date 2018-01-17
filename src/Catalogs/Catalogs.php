@@ -77,7 +77,7 @@ namespace Coedition\ASCX12\Catalogs;
 class Catalogs
 {
     // @TODO review the PUBLIC status of these vars, some should probably be PRIVATE
-    public $VERSION = '0.1';
+    public $VERSION = 0.1;
 	public $ISA;
 	public $EXPORT;
 	public $LOOPNEST;
