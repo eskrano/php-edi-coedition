@@ -314,12 +314,9 @@ class ASCX12 {
             if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
                 // @TODO AD not sure about this `$segcode` ATM, need to revisit in debugging
                 //my ($segcode, @elements) = split(/$self->{DES}/, $segment);
-                $elements = explode($this->DES, $segment);
+                list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
                 $catalog_name = 'Catalog' . $elements[0];
-                if (class_exists($catalog_name)) {
-
-                }
-                else {
+                if (!class_exists($catalog_name)) {
                     die('Catalog: "' . $catalog_name . '" does not exist');
                 }
                 $catalog = new $catalog_name;
@@ -386,7 +383,7 @@ class ASCX12 {
             $this->lastloop = (strlen($this->lastloop)) ? $this->lastloop : '';
             if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
                 //my ($segcode, @elements) = split(/$self->{DES}/, $segment);
-                $elements = explode($this->DES, $segment);
+                list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
                 if ($segcode and $segcode == "ST") {
                     ## warn "segcode = $segcode\n";
                     ## warn Dumper $self, $ASCX12::Catalogs::LOOPNEST,
