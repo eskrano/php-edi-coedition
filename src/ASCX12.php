@@ -1,6 +1,4 @@
 <?php
-# namespace
-
 /*
 NAME
     ASCX12 - ASCX12 EDI to XML Module
@@ -159,84 +157,90 @@ class ASCX12 {
 
         $xmlrpc->convertfile(\*INFILE, \*OUTFILE);
     */
-#    public function convertfile($in, $out) {
-#        $inhandle = null;
-#        $outhandle = null;
-#        $bisinfile = null;
-#        $bisoutfile = null;
-#        $st_check=0;
-#        $des_check=0;
-#
-#        $this->_unload_catalog();
-#
-#        $outhandle = $out;
-#        /* @TODO AD error checking if file can be writted or includes wildcards?
-#        if (ref($out) eq "GLOB" or ref(\$out) eq "GLOB"
-#        or ref($out) eq 'FileHandle' or ref($out) eq 'IO::Handle')
-#        {
-#        $outhandle = $out;
-#        }
-#        else
-#        {
-#        local(*XMLOUT);
-#        open (XMLOUT, "> $out") || croak "Cannot open file \"$out\" for writing: $!";
-#        $outhandle = *XMLOUT;
-#        $bisoutfile = 1;
-#        }
-#        */
-#
-#        file_put_contents($outhandle,$this->_XMLHEAD);
-#
-#        //$inhandle = $in;
-#        $inhandle = fopen($in,'r');
-#        /* @TODO AD error checking if file can be written or includes wildcards?
-#        print {$outhandle} $ASCX12::_XMLHEAD;
-#        {
-#        if (ref($in) eq "GLOB" or ref(\$in) eq "GLOB"
-#        or ref($in) eq 'FileHandle' or ref($in) eq 'IO::Handle')
-#        {
-#        $inhandle = $in;
-#        }
-#        else
-#        {
-#        local(*EDIIN);
-#        open (EDIIN, "< $in") || croak "Cannot open file \"$in\" file for reading: $!";
-#        $inhandle = *EDIIN;
-#        $bisinfile = 1;
-#        }
-#
-#        binmode($inhandle);
-#        */
-#
-#        //(my $eos = $self->{ST}) =~ s/^\\/0/;
-#        $eos = preg_replace('/^\\/', '0', $this->ST);
-#
-#        //local $/ = pack("C*", oct($eos));
-#        $_packed = pack("C*", ord($eos));
-#
-#        # Looping per-segment for processing
-#        while ($inhandle)
-#        {
-#        if (!$st_check) { $st_check = 1 if m/$self->{ST}/; }
-#        if (!$des_check) { $des_check = 1 if m/$self->{DES}/; }
-#
-#        chomp;
-#        print {$outhandle} $self->_proc_segment($_);
-#        }
-#        # This is done to close any open loops
-#        # XXX Is there a better way to "run on more time"?
-#        print {$outhandle} $self->_proc_segment('');
-#        }
-#        print {$outhandle} '</ascx:message>';
-#
-#    (close($inhandle) || croak "Cannot close output file \"$out\": $!") if $bisinfile;
-#    (close($outhandle)|| croak "Cannot close input file \"$in\": $!") if $bisoutfile;
-#
-#    croak "EDI Parsing Error:  Segment Terminator \"$self->{ST}\" not found" unless $st_check;
-#    croak "EDI Parsing Error:  Data Element Seperator \"$self->{DES}\" not found" unless $des_check;
-#
-#    return 1;
-#    }
+    public function convertfile($in, $out) {
+        $inhandle = null;
+        $outhandle = null;
+        $bisinfile = null;
+        $bisoutfile = null;
+        $st_check=0;
+        $des_check=0;
+
+        $this->_unload_catalog();
+
+        $outhandle = $out;
+        /* @TODO AD error checking if file can be writted or includes wildcards?
+        if (ref($out) eq "GLOB" or ref(\$out) eq "GLOB"
+        or ref($out) eq 'FileHandle' or ref($out) eq 'IO::Handle') {
+            $outhandle = $out;
+        }
+        else {
+            local(*XMLOUT);
+            open (XMLOUT, "> $out") || croak "Cannot open file \"$out\" for writing: $!";
+            $outhandle = *XMLOUT;
+            $bisoutfile = 1;
+        }
+        */
+
+        file_put_contents($out, $this->_XMLHEAD);
+
+        //$inhandle = $in;
+        //$inhandle = fopen($in,'r');
+        $inhandle = file_get_contents($in);
+        /* @TODO AD error checking if file can be written or includes wildcards?
+        print {$outhandle} $ASCX12::_XMLHEAD;
+        {
+            if (ref($in) eq "GLOB" or ref(\$in) eq "GLOB"
+            or ref($in) eq 'FileHandle' or ref($in) eq 'IO::Handle') {
+                $inhandle = $in;
+            }
+            else {
+                local(*EDIIN);
+                open (EDIIN, "< $in") || croak "Cannot open file \"$in\" file for reading: $!";
+                $inhandle = *EDIIN;
+                $bisinfile = 1;
+            }
+
+            binmode($inhandle);
+
+        // @TODO was this just for determining if it's a Windows system?
+        //(my $eos = $self->{ST}) =~ s/^\\/0/;
+        //$eos = preg_replace('/^\\/', 0, $this->ST);
+
+        //local $/ = pack("C*", oct($eos));
+
+        // End of String
+        $_delimiter = pack("C*", ord($eos));
+
+        # Looping per-segment for processing
+        while ($inhandle) {
+            if (!$st_check) { $st_check = 1 if m/$self->{ST}/; }
+            if (!$des_check) { $des_check = 1 if m/$self->{DES}/; }
+
+            //chomp;
+
+
+            print {$outhandle} $self->_proc_segment($_);
+        }
+        # This is done to close any open loops
+        # XXX Is there a better way to "run on more time"?
+        print {$outhandle} $self->_proc_segment('');
+        }
+        */
+        foreach (explode("\n", $inhandle) as $row) {
+            file_put_contents($outhandle, $this->_proc_segment($row), FILE_APPEND);
+        }
+        file_put_contents($outhandle, $this->_proc_segment(''), FILE_APPEND);
+        //print {$outhandle} '</ascx:message>';
+        file_put_contents($outhandle, '</ascx:message>', FILE_APPEND);
+
+        //(close($inhandle) || croak "Cannot close output file \"$out\": $!") if $bisinfile;
+        //(close($outhandle)|| croak "Cannot close input file \"$in\": $!") if $bisoutfile;
+
+        //croak "EDI Parsing Error:  Segment Terminator \"$self->{ST}\" not found" unless $st_check;
+        //croak "EDI Parsing Error:  Data Element Seperator \"$self->{DES}\" not found" unless $des_check;
+
+        return 1;
+    }
 
 /*
         string = $obj->convertdata($input)
