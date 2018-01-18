@@ -81,7 +81,7 @@ class Catalogs
 	public $ISA;
 	public $EXPORT;
 	public $LOOPNEST;
-	public $IS_CHILD;
+	public $IS_CHILD = [];
 	public $catalog_hash = [
         832 => null,
         846 => null,

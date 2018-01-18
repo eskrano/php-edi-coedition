@@ -48,7 +48,7 @@ PUBLIC STATIC VARIABLES
 namespace Coedition\ASCX12\Catalogs;
 
 class Segments {
-    public $VERSION = '0.1';
+    public static $VERSION = '0.1';
     public static $SEGMENTS = [
    # CODE   => [Description, (M)andatory|(O)ptional, MxUse, LoopID, LoopRepeat]
     'ISA'  => ['Interchange Control Header',                'M', 1,  'ISA',  0]
