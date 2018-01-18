@@ -72,7 +72,7 @@ PUBLIC STATIC METHODS
     please submit this file and the Segments.pl to the author(s) so we can make
     this library grow.
 */
-namespace Coedition\ASCX12\Catalogs;
+namespace Coedition\EDI\Catalogs;
 
 class Catalogs
 {
@@ -80,7 +80,7 @@ class Catalogs
     public $VERSION = 0.1;
 	public $ISA;
 	public $EXPORT;
-	public $LOOPNEST;
+	public $LOOPNEST = [];
 	public $IS_CHILD = [];
 	public $catalog_hash = [
         832 => null,
@@ -101,41 +101,41 @@ class Catalogs
                 #
                 # CATALOG 0 - Fake catalog used to load up general ASCX12 relationship
                 #
-				array_push($this->LOOPNEST['ISA'], ['GS']);
-				array_push($this->LOOPNEST['GS'], ['ST']);
+				$this->push(['ISA'], ['GS']);
+				$this->push(['GS'], ['ST']);
 				break;
 
             case 110:
                 #
                 # CATALOG 110 - Airfreight Details & Invoice
                 #
-                array_push($this->LOOPNEST['ST'], ['N1','LX','SE','L3']);
-                array_push($this->LOOPNEST['LX'], ['N1','L5']);
-                array_push($this->LOOPNEST['L5'], ['L1']);
+                $this->push(['ST'], ['N1','LX','SE','L3']);
+                $this->push(['LX'], ['N1','L5']);
+                $this->push(['L5'], ['L1']);
         		break;
 
             case 820:
                 #
                 # CATALOG 820 - Payment Order / Remittance Advice
                 #
-                array_push($this->LOOPNEST['ST'], ['N1','ENT']);
-                array_push($this->LOOPNEST['ENT'], ['NM1','RMR']);
-                array_push($this->LOOPNEST['RMR'], ['REF','ADX']);
+                $this->push(['ST'], ['N1','ENT']);
+                $this->push(['ENT'], ['NM1','RMR']);
+                $this->push(['RMR'], ['REF','ADX']);
         		break;
 
             case 997:
                 #
                 # CATALOG 920 - Functional Acknowledgement
                 #
-                array_push($this->LOOPNEST['ST'], ['AK2']);
-                array_push($this->LOOPNEST['AK2'], ['AK3']);
+                $this->push(['ST'], ['AK2']);
+                $this->push(['AK2'], ['AK3']);
 
 				#
 				# CATALOG 997 -
 				#
-				array_push($this->LOOPNEST['GS'], ['ST']);
-				array_push($this->LOOPNEST['ST'], ['AK1']);
-				array_push($this->LOOPNEST['AK1'], ['AK2','AK3','AK4','AK5','AK9']);
+				$this->push(['GS'], ['ST']);
+				$this->push(['ST'], ['AK1']);
+				$this->push(['AK1'], ['AK2','AK3','AK4','AK5','AK9']);
         		break;
             #
             # XXX Add your catalogs here following the pattern.
@@ -149,10 +149,10 @@ class Catalogs
                 #
                 # CATALOG 175 - Court Notice
                 #
-                array_push($this->LOOPNEST['ST'], ['CDS']);
-            	array_push($this->LOOPNEST['CDS'], ['CED']);
-            	array_push($this->LOOPNEST['CED'], ['LM','NM1']);
-            	array_push($this->LOOPNEST['CTP'],['DTM']);
+                $this->push(['ST'], ['CDS']);
+            	$this->push(['CDS'], ['CED']);
+            	$this->push(['CED'], ['LM','NM1']);
+            	$this->push(['CTP'],['DTM']);
             	#
             	# Close loop unless next seqment is a legal loop or child
             	# $IS_CHILD->{parent}->{child} = value;
@@ -184,46 +184,46 @@ class Catalogs
                 #
                 # CATALOG 832
                 #
-                array_push($this->LOOPNEST['ST'], ['N1']);
-            	array_push($this->LOOPNEST['N1'], ['LIN']);
-            	array_push($this->LOOPNEST['LIN'],['CTP']);
+                $this->push(['ST'], ['N1']);
+            	$this->push(['N1'], ['LIN']);
+            	$this->push(['LIN'],['CTP']);
         		break;
 
             case 850:
                 #
                 # CATALOG 850
                 #
-                array_push($this->LOOPNEST['GS'], ['ST']);
-            	array_push($this->LOOPNEST['ST'], ['BEG','REF','TD5','N1']);
-            	array_push($this->LOOPNEST['N1'], ['N2','N3','N4','PO1']);
-            	array_push($this->LOOPNEST['PO1'], ['PID','CTT']);
+                $this->push(['GS'], ['ST']);
+            	$this->push(['ST'], ['BEG','REF','TD5','N1']);
+            	$this->push(['N1'], ['N2','N3','N4','PO1']);
+            	$this->push(['PO1'], ['PID','CTT']);
         		break;
 
             case 855:
                 #
                 # CATALOG 855
                 #
-                array_push($this->LOOPNEST['GS'], ['ST']);
-            	array_push($this->LOOPNEST['ST'], ['BAK']);
-            	array_push($this->LOOPNEST['BAK'], ['N1','N2','N3','N4','N9','PO1','PID','ACK','CTT']);
-            	#array_push ($this->LOOPNEST['N1'], ['N2','N3','N4','PO1']);
-            	#array_push $this->LOOPNEST['PO1'], ['PID']);
-            	#array_push $this->LOOPNEST['PID'], ['ACK']);
-            	#array_push $this->LOOPNEST['ACK'], ['CTT']);
-            	#array_push $this->LOOPNEST['CTT'], ['SE']);
+                $this->push(['GS'], ['ST']);
+            	$this->push(['ST'], ['BAK']);
+            	$this->push(['BAK'], ['N1','N2','N3','N4','N9','PO1','PID','ACK','CTT']);
+            	#$this->push (['N1'], ['N2','N3','N4','PO1']);
+            	#$this->push ['PO1'], ['PID']);
+            	#$this->push ['PID'], ['ACK']);
+            	#$this->push ['ACK'], ['CTT']);
+            	#$this->push ['CTT'], ['SE']);
         		break;
 
             case 846:
                 #
                 # CATALOG 846
                 #
-                array_push($this->LOOPNEST['GS'], ['ST']);
-            	array_push($this->LOOPNEST['ST'], ['BIA','DTM','REF','N1']);
-            	#array_push($this->LOOPNEST['REF'], ['N1']);
-            	array_push($this->LOOPNEST['N1'], ['LIN']);
-            	array_push($this->LOOPNEST['LIN'], ['PID','QTY','SCH']);
-            	#array_push($this->LOOPNEST['PID'], ['QTY']);
-            	#array_push($this->LOOPNEST['QTY'], ['SCH']);
+                $this->push(['GS'], ['ST']);
+            	$this->push(['ST'], ['BIA','DTM','REF','N1']);
+            	#$this->push(['REF'], ['N1']);
+            	$this->push(['N1'], ['LIN']);
+            	$this->push(['LIN'], ['PID','QTY','SCH']);
+            	#$this->push(['PID'], ['QTY']);
+            	#$this->push(['QTY'], ['SCH']);
 
         #	    $this->IS_CHILD['ISA']['ISA'] = 0;
         #	    $this->IS_CHILD['ISA']['GS']  = 0;
@@ -244,14 +244,14 @@ class Catalogs
                 #
                 # CATALOG 856
                 #
-                array_push($this->LOOPNEST['GS'], ['ST']);
-            	array_push($this->LOOPNEST['ST'], ['BSN']);
-            	array_push($this->LOOPNEST['BSN'], ['HL']);
-            	array_push($this->LOOPNEST['HL'], ['TD1','TD5','REF','DTM','N1']);
-            	array_push($this->LOOPNEST['N1'], ['N1','N2','N3','N4']);
-            	array_push($this->LOOPNEST['HL'], ['HL','PRF','TD1','REF']);
-            	array_push($this->LOOPNEST['HL'], ['HL','REF','MAN']);
-            	array_push($this->LOOPNEST['HL'], ['HL','LIN','SN1']);
+                $this->push(['GS'], ['ST']);
+            	$this->push(['ST'], ['BSN']);
+            	$this->push(['BSN'], ['HL']);
+            	$this->push(['HL'], ['TD1','TD5','REF','DTM','N1']);
+            	$this->push(['N1'], ['N1','N2','N3','N4']);
+            	$this->push(['HL'], ['HL','PRF','TD1','REF']);
+            	$this->push(['HL'], ['HL','REF','MAN']);
+            	$this->push(['HL'], ['HL','LIN','SN1']);
 
             	$this->IS_CHILD['ISA']['ISA'] = 0;
             	$this->IS_CHILD['ISA']['GS'] = 0;
@@ -281,9 +281,9 @@ class Catalogs
                 #
                 # CATALOG 997 -
                 #
-                array_push($this->LOOPNEST['GS'], ['ST']);
-            	array_push($this->LOOPNEST['ST'], ['AK1']);
-            	array_push($this->LOOPNEST['AK1'], ['AK2','AK3','AK4','AK5','AK9']);
+                $this->push(['GS'], ['ST']);
+            	$this->push(['ST'], ['AK1']);
+            	$this->push(['AK1'], ['AK2','AK3','AK4','AK5','AK9']);
         		break;
 			*/
             default:
@@ -295,4 +295,32 @@ class Catalogs
 	public function has_catalog($catalog) {
 		return isset($this->catalog_hash[$catalog]);
 	}
+
+    // Debugging
+    public function dump_catalog() {
+        print_r($this);
+    }
+    /*
+     * builds the LOOPNEST datastructure adding elements/values
+     * does some checking and array initialization
+     */
+    private function push($segment_array, $new_value) {
+        foreach ($segment_array as $segment){
+            if(!isset($this->LOOPNEST[$segment])) {
+                $this->LOOPNEST[$segment] = [];
+                foreach ($new_value as $value){
+                    $this->LOOPNEST[$segment][] = $value;
+                }
+            }
+        }
+
+        // @TODO AD DELME DEBUGGING
+        /*
+        echo "LOOPNEST\n";
+        print_r($this->LOOPNEST);
+        echo "\n\n\n";
+        */
+        // @TODO AD END DELME DEBUGGING
+    }
+
 }

@@ -1,7 +1,7 @@
 <?php
-namespace Coedition\ASCX12\Catalogs;
+namespace Coedition\EDI\Catalogs;
 
-final class Catalog832
+final class Catalog997
 {
     public $VERSION = 0.1;
 

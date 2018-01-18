@@ -1,5 +1,5 @@
 <?php
-namespace Coedition\ASCX12\Catalogs;
+namespace Coedition\EDI\Catalogs;
 
 final class Catalog846
 {

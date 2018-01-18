@@ -99,9 +99,9 @@ Private Variables
     Static variable containing the XML header for the output.
 */
 
-namespace Coedition\ASCX12;
-use Coedition\ASCX12\Catalogs\Catalogs;
-use Coedition\ASCX12\Catalogs\Segments;
+namespace Coedition\EDI;
+use Coedition\EDI\Catalogs\Catalogs;
+use Coedition\EDI\Catalogs\Segments;
 
 class ASCX12 {
 
@@ -168,77 +168,15 @@ class ASCX12 {
         $this->_unload_catalog();
 
         $outhandle = $out;
-        /* @TODO AD error checking if file can be writted or includes wildcards?
-        if (ref($out) eq "GLOB" or ref(\$out) eq "GLOB"
-        or ref($out) eq 'FileHandle' or ref($out) eq 'IO::Handle') {
-            $outhandle = $out;
-        }
-        else {
-            local(*XMLOUT);
-            open (XMLOUT, "> $out") || croak "Cannot open file \"$out\" for writing: $!";
-            $outhandle = *XMLOUT;
-            $bisoutfile = 1;
-        }
-        */
 
         file_put_contents($out, $this->_XMLHEAD);
-
-        //$inhandle = $in;
-        //$inhandle = fopen($in,'r');
         $inhandle = file_get_contents($in);
-        /* @TODO AD error checking if file can be written or includes wildcards?
-        print {$outhandle} $ASCX12::_XMLHEAD;
-        {
-            if (ref($in) eq "GLOB" or ref(\$in) eq "GLOB"
-            or ref($in) eq 'FileHandle' or ref($in) eq 'IO::Handle') {
-                $inhandle = $in;
-            }
-            else {
-                local(*EDIIN);
-                open (EDIIN, "< $in") || croak "Cannot open file \"$in\" file for reading: $!";
-                $inhandle = *EDIIN;
-                $bisinfile = 1;
-            }
 
-            binmode($inhandle);
-
-        // @TODO was this just for determining if it's a Windows system?
-        //(my $eos = $self->{ST}) =~ s/^\\/0/;
-        //$eos = preg_replace('/^\\/', 0, $this->ST);
-
-        //local $/ = pack("C*", oct($eos));
-
-        // End of String
-        $_delimiter = pack("C*", ord($eos));
-
-        # Looping per-segment for processing
-        while ($inhandle) {
-            if (!$st_check) { $st_check = 1 if m/$self->{ST}/; }
-            if (!$des_check) { $des_check = 1 if m/$self->{DES}/; }
-
-            //chomp;
-
-
-            print {$outhandle} $self->_proc_segment($_);
-        }
-        # This is done to close any open loops
-        # XXX Is there a better way to "run on more time"?
-        print {$outhandle} $self->_proc_segment('');
-        }
-        */
         foreach (explode("\n", $inhandle) as $row) {
             file_put_contents($outhandle, $this->_proc_segment($row), FILE_APPEND);
         }
         file_put_contents($outhandle, $this->_proc_segment(''), FILE_APPEND);
-        //print {$outhandle} '</ascx:message>';
         file_put_contents($outhandle, '</ascx:message>', FILE_APPEND);
-
-        //(close($inhandle) || croak "Cannot close output file \"$out\": $!") if $bisinfile;
-        //(close($outhandle)|| croak "Cannot close input file \"$in\": $!") if $bisoutfile;
-
-        //croak "EDI Parsing Error:  Segment Terminator \"$self->{ST}\" not found" unless $st_check;
-        //croak "EDI Parsing Error:  Data Element Seperator \"$self->{DES}\" not found" unless $des_check;
-
         return 1;
     }
 
@@ -261,13 +199,11 @@ class ASCX12 {
             }
 
             $out = $this->_XMLHEAD;
-            //(my $eos = $self->{ST}) =~ s/^\\/0/;
+            $matches = [];
             preg_replace('/^\\/', 0, $this->ST, $matches);
             $eos = $matches[0];
-            //my @data = split(pack("C*", oct($eos)), $in);
             $data = explode(pack("C*", ord($eos)), $in);
             foreach($data as $key => $value) {
-                // @TODO AD this call to _proc_segment($key) should maybe use $value?
                 $out .= $this->_proc_segment($key);
             }
             $out .= $this->_proc_segment('');
@@ -318,19 +254,32 @@ class ASCX12 {
             if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
                 // @TODO AD not sure about this `$segcode` ATM, need to revisit in debugging
                 //my ($segcode, @elements) = split(/$self->{DES}/, $segment);
-                list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
-                $catalog_name = 'Catalog' . $elements[0];
-                if (!class_exists($catalog_name)) {
-                    die('Catalog: "' . $catalog_name . '" does not exist');
+                //list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
+                //list($segcode, $elements) = preg_split('/\|/', $segment);
+                $segcode = null;
+                $elements = [];
+                foreach (explode($this->DES,$segment) as $key => $value) {
+                    if ($key == 0) {
+                        $segcode = $value;
+                    }
+                    else {
+                        $elements[] = $value;
+                    }
                 }
-                $catalog = new $catalog_name;
-                # add the temp_SEGMENTS to the $SEGMENTS
-                $this->SEGMENTS = array_merge($catalog->temp_SEGMENTS, $this->SEGMENTS);
-                # add the temp_ELEMENTS to the $ELEMENTS
-                $this->ELEMENTS = array_merge($catalog->temp_ELEMENTS, $this->ELEMENTS);
-                # END load additional segments/elements
 
-                // @TODO AD segcode is missing from above's `todo`
+                $catalog_name = 'Catalog' . $elements[0];
+                $file_name = 'Catalogs/'.$catalog_name.'.php';
+                //if (class_exists($catalog_name)) {
+                if (file_exists($file_name)) {
+                    include_once($file_name);
+                    $catalog_name = "Coedition\\EDI\\Catalogs\\" . $catalog_name;
+                    $catalog = new $catalog_name();
+                    # add the temp_SEGMENTS to the $SEGMENTS
+                    $this->SEGMENTS = array_merge($catalog->temp_SEGMENTS, $this->SEGMENTS);
+                    # add the temp_ELEMENTS to the $ELEMENTS
+                    $this->ELEMENTS = array_merge($catalog->temp_ELEMENTS, $this->ELEMENTS);
+                    # END load additional segments/elements
+                }
                 if ($segcode and $segcode == "ST")
                 {
                     $this->_unload_catalog();
@@ -389,8 +338,6 @@ class ASCX12 {
                 //my ($segcode, @elements) = split(/$self->{DES}/, $segment);
                 list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
                 if ($segcode and $segcode == "ST") {
-                    ## warn "segcode = $segcode\n";
-                    ## warn Dumper $self, $ASCX12::Catalogs::LOOPNEST,
                     ## 	\@_LOOPS, $ASCX12::Catalogs::IS_CHILD;
                 }
                 else if ($segcode) {
@@ -405,25 +352,18 @@ class ASCX12 {
                 $is_child = null;
                 // get the last element
                 $curloop = $this->_LOOPS[count($this->_LOOPS) - 1];
-                //until ( defined ($is_child = $this->CATALOGS->IS_CHILD[$curloop][$segcode]) ) {
                 while(is_null($is_child)) {
                     $is_child = $this->CATALOGS->IS_CHILD[$curloop][$segcode];
                     if (is_null($is_child)) {
                         $xml .= $this->_execclose($curloop);
-                        echo "WCB close tag: $xml\n";
-                        echo "segcode: $segcode\n";
-                        ## warn Dumper \@_LOOPS;
-                        //$curloop = $this->_LOOPS[-1];
                         $curloop = $this->_LOOPS[count($this->_LOOPS) - 1];
                     }
                 }
-                ## warn "WCB IS_CHILD = $is_child, $curloop, $segcode, $_LOOPS[-1]\n";
 
                 if ($elements) {
                     # check to see if we need to open a loop
                     if ($is_child == 0) {
                         array_push($this->_LOOPS, $segcode);
-                        ## warn 'WCB open tag: <'.ASCX12::XMLENC($segcode).">\n";
                         $xml .= '<'.$this->XMLENC($segcode).'>';
                     }
 
@@ -461,10 +401,10 @@ class ASCX12 {
                     $elename = null;
                     $elename = ($i >= 10) ? $segcode . $i : $segcode . '0' . $i;
                     $xml .= '<elem code="'. $this->XMLENC($elename) . '"';
-                    if (Segments::$ELEMENTS[$elename]) {
-                        $xml .= ' desc="' . $this->XMLENC(Segments::$ELEMENTS[$elename][0]) . '"';
+                    if ($this->ELEMENTS[$elename]) {
+                        $xml .= ' desc="' . $this->XMLENC($this->ELEMENTS[$elename][0]) . '"';
                     }
-                    $xml .= '>' . $this->XMLENC($matches[0]) . '</elem>';
+                    $xml .= '>' . $this->XMLENC($element) . '</elem>';
                 }
                 $i++;
             }
@@ -599,6 +539,14 @@ class ASCX12 {
             }
         }
         return 0;
+    }
+
+    public function load_catalog($catalog) {
+        $this->CATALOGS->load_catalog($catalog);
+    }
+
+    public function dump_catalog() {
+        $this->CATALOGS->dump_catalog();
     }
 
     /*

@@ -45,7 +45,7 @@ PUBLIC STATIC VARIABLES
 */
 
 
-namespace Coedition\ASCX12\Catalogs;
+namespace Coedition\EDI\Catalogs;
 
 class Segments {
     public static $VERSION = '0.1';
