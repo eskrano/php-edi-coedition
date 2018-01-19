@@ -157,26 +157,9 @@ class ASCX12 {
 
         $xmlrpc->convertfile(\*INFILE, \*OUTFILE);
     */
-    public function convertfile($in, $out) {
-        $inhandle = null;
-        $outhandle = null;
-        $bisinfile = null;
-        $bisoutfile = null;
-        $st_check=0;
-        $des_check=0;
-
-        $this->_unload_catalog();
-
-        $outhandle = $out;
-
-        file_put_contents($out, $this->_XMLHEAD);
-        $inhandle = file_get_contents($in);
-
-        foreach (explode("\n", $inhandle) as $row) {
-            file_put_contents($outhandle, $this->_proc_segment($row), FILE_APPEND);
-        }
-        file_put_contents($outhandle, $this->_proc_segment(''), FILE_APPEND);
-        file_put_contents($outhandle, '</ascx:message>', FILE_APPEND);
+    public function convertfile($infile, $outfile) {
+        $out = $this->convertdata(file_get_contents($infile));
+        file_put_contents($outfile,$out);
         return 1;
     }
 
@@ -189,26 +172,23 @@ class ASCX12 {
         my $xml = $xmlrpc->convertdata($binary_edi_data);
 */
         public function convertdata($in) {
-            //croak "EDI Parsing Error:  Segment Terminator \"$self->{ST}\" not found" unless ($in =~ m/$self->{ST}/);
-            if (!(strpos($this->ST, $in) !== false)) {
+            if (!preg_match("/$this->ST/", $in)) {
                 die("EDI Parsing Error:  Segment Terminator '".$this->ST."' not found");
             }
-            //croak "EDI Parsing Error:  Data Element Seperator \"$self->{DES}\" not found" unless ($in =~ m/$self->{DES}/);
-            if (!(strpos($this->DES, $in) !== false)) {
+            if (!preg_match("/$this->DES/", $in)) {
                 die("EDI Parsing Error:  Data Element Seperator '".$this->DES."' not found");
             }
 
+            $this->_unload_catalog();
             $out = $this->_XMLHEAD;
-            $matches = [];
-            preg_replace('/^\\/', 0, $this->ST, $matches);
-            $eos = $matches[0];
-            $data = explode(pack("C*", ord($eos)), $in);
-            foreach($data as $key => $value) {
-                $out .= $this->_proc_segment($key);
+
+            foreach (explode($this->ST, $in) as $row) {
+                $out .= $this->_proc_segment($row);
             }
             $out .= $this->_proc_segment('');
+            $out .=  '</ascx:message>';
 
-            return $out;
+            return $this->format_xml($out);
         }
 
     /*
@@ -539,6 +519,12 @@ class ASCX12 {
             }
         }
         return 0;
+    }
+
+    private function format_xml($xml) {
+       $dom = dom_import_simplexml(simplexml_load_string($xml))->ownerDocument;
+        $dom->formatOutput = true;
+        return $dom->saveXML();
     }
 
     public function load_catalog($catalog) {
