@@ -76,7 +76,6 @@ namespace Coedition\EDI\Catalogs;
 
 class Catalogs
 {
-    // @TODO review the PUBLIC status of these vars, some should probably be PRIVATE
     public $VERSION = 0.1;
 	public $ISA;
 	public $EXPORT;
@@ -90,10 +89,6 @@ class Catalogs
         856 => null,
         997 => null
 	];
-
-	public function __construct() {
-
-	}
 
 	public function load_catalog($catalog) {
 		switch($catalog) {
@@ -276,16 +271,6 @@ class Catalogs
             	$this->IS_CHILD['ISA']['IEA'] = 1;
         		break;
 
-			/*
-            case 997:
-                #
-                # CATALOG 997 -
-                #
-                $this->push(['GS'], ['ST']);
-            	$this->push(['ST'], ['AK1']);
-            	$this->push(['AK1'], ['AK2','AK3','AK4','AK5','AK9']);
-        		break;
-			*/
             default:
                 die("Catalog '$catalog' has not been defined!");
 				break;
@@ -296,10 +281,6 @@ class Catalogs
 		return isset($this->catalog_hash[$catalog]);
 	}
 
-    // Debugging
-    public function dump_catalog() {
-        print_r($this);
-    }
     /*
      * builds the LOOPNEST datastructure adding elements/values
      * does some checking and array initialization
@@ -313,14 +294,5 @@ class Catalogs
                 }
             }
         }
-
-        // @TODO AD DELME DEBUGGING
-        /*
-        echo "LOOPNEST\n";
-        print_r($this->LOOPNEST);
-        echo "\n\n\n";
-        */
-        // @TODO AD END DELME DEBUGGING
     }
-
 }

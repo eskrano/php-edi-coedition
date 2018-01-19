@@ -116,26 +116,6 @@ class ASCX12 {
     private $ELEMENTS;
     private $lastloop;
 
-
-    /*
-    --------------------
-    Public Methods
-    --------------------
-
-    object = new([$segment_terminator], [$data_element_separator], [$subelement_separator])
-
-    The new method is the OO constructor.  The default for the segment terminator
-    is ASCII C<85> hex. The default for the data element separator is ASCII C<1D> hex.  The default
-    for the sub-element separator is ASCII C<1F> hex.
-
-    my $xmlrpc = new ASCX12();
-
-    The defaults can be overridden by passing them into the constructor.
-
-    my $xmlrpc = new ASCX12('\x0D', '\x2A', '\x3A');
-
-    The object that returns is now ready to transform EDI files.
-    */
     public function __construct($st='\x85', $des='\x1D', $sbs='\x1F') {
         $this->ST = $st;
         $this->DES = $des;
@@ -144,428 +124,358 @@ class ASCX12 {
         $this->SEGMENTS = Segments::$SEGMENTS;
         $this->ELEMENTS = Segments::$ELEMENTS;
     }
+
+    public function load_catalog($catalog) {
+        $this->CATALOGS->load_catalog($catalog);
+    }
+
     /*
-        boolean = $obj->convertfile($input, $output)
-
-        This method will transform and EDI file to XML using the configuration information
-        passed in from the constructor.
-
-        my $xmlrpc = new ASCX12();
-        $xmlrpc->convertfile('/path/to/EDI.dat', '/path/to/EDI.xml');
-
-        You may also pass filehandles (or references to filehandles):
-
-        $xmlrpc->convertfile(\*INFILE, \*OUTFILE);
-    */
+     *   boolean = $obj->convertfile($input, $output)
+     *
+     *   This method will transform and EDI file to XML using the configuration information
+     *   passed in from the constructor.
+     */
     public function convertfile($infile, $outfile) {
         $out = $this->convertdata(file_get_contents($infile));
         file_put_contents($outfile,$out);
         return 1;
     }
 
-/*
-        string = $obj->convertdata($input)
-
-        This method will transform an EDI data stream, returning wellformed XML.
-
-        my $xmlrpc = new ASCX12();
-        my $xml = $xmlrpc->convertdata($binary_edi_data);
-*/
-        public function convertdata($in) {
-            if (!preg_match("/$this->ST/", $in)) {
-                die("EDI Parsing Error:  Segment Terminator '".$this->ST."' not found");
-            }
-            if (!preg_match("/$this->DES/", $in)) {
-                die("EDI Parsing Error:  Data Element Seperator '".$this->DES."' not found");
-            }
-
-            $this->_unload_catalog();
-            $out = $this->_XMLHEAD;
-
-            foreach (explode($this->ST, $in) as $row) {
-                $out .= $this->_proc_segment($row);
-            }
-            $out .= $this->_proc_segment('');
-            $out .=  '</ascx:message>';
-
-            return $this->format_xml($out);
+    /*
+     * string = $obj->convertdata($input)
+     * This method will transform an EDI data stream, returning wellformed XML.
+     *
+     */
+    public function convertdata($in) {
+        if (!preg_match("/$this->ST/", $in)) {
+            die("EDI Parsing Error:  Segment Terminator '".$this->ST."' not found");
+        }
+        if (!preg_match("/$this->DES/", $in)) {
+            die("EDI Parsing Error:  Data Element Seperator '".$this->DES."' not found");
         }
 
-    /*
-        string = XMLENC($string)
+        $this->_unload_catalog();
+        $out = $this->_XMLHEAD;
 
-        Static public method used to encode and return data suitable for ASCII XML CDATA
-
-        $xml_ready_string = ASCX12::XMLENC($raw_data);
-    */
-        public function XMLENC($str = null) {
-            if (!is_null($str)) {
-                /*
-                $str =~ s/([&<>"])/$_XMLREP{$1}/ge;    # relace any &<>" characters
-                $str =~ s/[\x80-\xff]//ge;             # get rid on any non-ASCII characters
-                $str =~ s/[\x01-\x1f]//ge;             # get rid on any non-ASCII characters
-                */
-                $xml_search  = ['&','<','>','"'];
-                $xml_replace = [ '&amp;', '&lt;', '&gt;', '&quot;'];
-                # relace any &<>" characters
-                $str = str_replace($xml_search, $xml_replace, $str);
-                # get rid on any non-ASCII characters
-                $str = preg_replace('/[\x80-\xff]/u','',$str);
-                # get rid on any non-ASCII characters
-                $str = preg_replace('/[\x01-\x1f]/u','',$str);
-            }
-            return $str;
+        foreach (explode($this->ST, $in) as $row) {
+            $out .= $this->_proc_segment($row);
         }
+        $out .= $this->_proc_segment('');
+        $out .=  '</ascx:message>';
+
+        return $this->format_xml($out);
+    }
 
     /*
-        ----------------
-        Private Methods
-        ----------------
-        string = _proc_segment($segment_data);
-
-        This is an internal private method that processes a segment using $LOOPNEST.
-        It is called by C<convertfile()> or C<convertdata()> while looping per-segment.
+     * string = XMLENC($string)
+     *
+     * Static public method used to encode and return data suitable for ASCII XML CDATA
+     * $xml_ready_string = ASCX12::XMLENC($raw_data);
     */
-        private function _proc_segment($segment) {
-            if (isset($this->CATALOGS->IS_CHILD)) {
-                return $this->_proc_segment_in_child($segment);
+    public function XMLENC($str = null) {
+        if (!is_null($str)) {
+            $xml_search  = ['&','<','>','"'];
+            $xml_replace = [ '&amp;', '&lt;', '&gt;', '&quot;'];
+            # relace any &<>" characters
+            $str = str_replace($xml_search, $xml_replace, $str);
+            # get rid on any non-ASCII characters
+            $str = preg_replace('/[\x80-\xff]/u','',$str);
+            # get rid on any non-ASCII characters
+            $str = preg_replace('/[\x01-\x1f]/u','',$str);
+        }
+        return $str;
+    }
+
+    /*
+     * string = _proc_segment($segment_data);
+     * This is an internal private method that processes a segment using $LOOPNEST.
+     * It is called by C<convertfile()> or C<convertdata()> while looping per-segment.
+     */
+    private function _proc_segment($segment) {
+        if (isset($this->CATALOGS->IS_CHILD)) {
+            return $this->_proc_segment_in_child($segment);
+        }
+        $segment = str_replace("\n",'',$segment);
+        if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
+            $segcode = null;
+            $elements = [];
+            foreach (explode($this->DES,$segment) as $key => $value) {
+                if ($key == 0) {
+                    $segcode = $value;
+                }
+                else {
+                    $elements[] = $value;
+                }
             }
-            $segment = str_replace("\n",'',$segment);
-            if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
-                // @TODO AD not sure about this `$segcode` ATM, need to revisit in debugging
-                //my ($segcode, @elements) = split(/$self->{DES}/, $segment);
-                //list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
-                //list($segcode, $elements) = preg_split('/\|/', $segment);
-                $segcode = null;
-                $elements = [];
-                foreach (explode($this->DES,$segment) as $key => $value) {
-                    if ($key == 0) {
-                        $segcode = $value;
-                    }
-                    else {
-                        $elements[] = $value;
-                    }
-                }
 
-                $catalog_name = 'Catalog' . $elements[0];
-                $file_name = 'Catalogs/'.$catalog_name.'.php';
-                //if (class_exists($catalog_name)) {
-                if (file_exists($file_name)) {
-                    include_once($file_name);
-                    $catalog_name = "Coedition\\EDI\\Catalogs\\" . $catalog_name;
-                    $catalog = new $catalog_name();
-                    # add the temp_SEGMENTS to the $SEGMENTS
-                    $this->SEGMENTS = array_merge($catalog->temp_SEGMENTS, $this->SEGMENTS);
-                    # add the temp_ELEMENTS to the $ELEMENTS
-                    $this->ELEMENTS = array_merge($catalog->temp_ELEMENTS, $this->ELEMENTS);
-                    # END load additional segments/elements
+            $catalog_name = 'Catalog' . $elements[0];
+            $file_name = 'Catalogs/'.$catalog_name.'.php';
+            if (file_exists($file_name)) {
+                include_once($file_name);
+                $catalog_name = "Coedition\\EDI\\Catalogs\\" . $catalog_name;
+                $catalog = new $catalog_name();
+                # add the temp_SEGMENTS to the $SEGMENTS
+                $this->SEGMENTS = array_merge($catalog->temp_SEGMENTS, $this->SEGMENTS);
+                # add the temp_ELEMENTS to the $ELEMENTS
+                $this->ELEMENTS = array_merge($catalog->temp_ELEMENTS, $this->ELEMENTS);
+                # END load additional segments/elements
+            }
+            if ($segcode and $segcode == "ST")
+            {
+                $this->_unload_catalog();
+                $this->CATALOGS->load_catalog($elements[0]);
+                ## IS_CHILD not defined until after Catalog loaded
+                ## Use alternate parsing starting with "ST" segment
+                if (isset($this->CATALOGS->IS_CHILD)) {
+                    return $this->_proc_segment_in_child($segment);
                 }
-                if ($segcode and $segcode == "ST")
-                {
-                    $this->_unload_catalog();
-                    $this->CATALOGS->load_catalog($elements[0]);
-                    ## IS_CHILD not defined until after Catalog loaded
-                    ## Use alternate parsing starting with "ST" segment
-                    if (isset($this->CATALOGS->IS_CHILD)) {
-                        return $this->_proc_segment_in_child($segment);
-                    }
-                }
+            }
 
-                # check to see if we need to close a loop
-                //my $curloop = $ASCX12::Segments::SEGMENTS->{$segcode}[3] if $segcode;
-                $curloop = $segcode ? $this->SEGMENTS[$segcode][3] : null;
-                $xml = '';
-                $tmp = $this->_closeloop($curloop,$this->lastloop, $segcode);
+            # check to see if we need to close a loop
+            $curloop = $segcode ? $this->SEGMENTS[$segcode][3] : null;
+            $xml = '';
+            $tmp = $this->_closeloop($curloop,$this->lastloop, $segcode);
+            if ($tmp) {
+                $xml .= $tmp;
+            }
+            if (count($elements)) {
+                # check to see if we need to open a loop
+                $tmp = $this->_openloop($curloop, $this->lastloop);
                 if ($tmp) {
                     $xml .= $tmp;
                 }
-                if (count($elements)) {
-                    # check to see if we need to open a loop
-                    $tmp = $this->_openloop($curloop, $this->lastloop);
-                    if ($tmp) {
-                        $xml .= $tmp;
-                    }
 
-                    # now the standard segment (and elements)
-                    $xml .= '<segm code="'. $this->XMLENC($segcode) . '"';
-                    if($this->SEGMENTS[$segcode]) {
-                        $xml .= ' desc="'. $this->XMLENC($this->SEGMENTS[$segcode][0]) . '"';
-                    }
-                    $xml .= '>';
-
-                    # make our elements
-                    $xml .= $this->_proc_element($segcode, $elements);
-
-                    # close the segment
-                    $xml .= '</segm>';
-
-                    # keep track
-                    $this->lastloop = $curloop;
+                # now the standard segment (and elements)
+                $xml .= '<segm code="'. $this->XMLENC($segcode) . '"';
+                if($this->SEGMENTS[$segcode]) {
+                    $xml .= ' desc="'. $this->XMLENC($this->SEGMENTS[$segcode][0]) . '"';
                 }
-                return $xml;
-            }
-            return null;
-        }
-/*
-        string = _proc_segment_in_child($segment_data);
-        This is an internal private method that processes a segment using $IN_CHILD.
-        It is called by C<_proc_segment()> when $IN_CHILD is defined.
-*/
-        private function _proc_segment_in_child($segment) {
-            $segment = str_replace("\n",'',$segment);
-            $this->lastloop = (strlen($this->lastloop)) ? $this->lastloop : '';
-            if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
-                //my ($segcode, @elements) = split(/$self->{DES}/, $segment);
-                list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
-                if ($segcode and $segcode == "ST") {
-                    ## 	\@_LOOPS, $ASCX12::Catalogs::IS_CHILD;
-                }
-                else if ($segcode) {
-                    ## warn "segcode = $segcode\n";
-                }
-                else {
-                    ## warn "no segcode\n";
-                    ## final loop close
-                    return $this->_closeloop('', $this->lastloop, '');
-                }
-                $xml = '';
-                $is_child = null;
-                // get the last element
-                $curloop = $this->_LOOPS[count($this->_LOOPS) - 1];
-                while(is_null($is_child)) {
-                    $is_child = $this->CATALOGS->IS_CHILD[$curloop][$segcode];
-                    if (is_null($is_child)) {
-                        $xml .= $this->_execclose($curloop);
-                        $curloop = $this->_LOOPS[count($this->_LOOPS) - 1];
-                    }
-                }
+                $xml .= '>';
 
-                if ($elements) {
-                    # check to see if we need to open a loop
-                    if ($is_child == 0) {
-                        array_push($this->_LOOPS, $segcode);
-                        $xml .= '<'.$this->XMLENC($segcode).'>';
-                    }
+                # make our elements
+                $xml .= $this->_proc_element($segcode, $elements);
 
-                    # now the standard segment (and elements)
-                    $xml .= '<segm code="'.$this->XMLENC($segcode).'"';
-                    $xml .= $this->SEGMENTS[$segcode] ? ' desc="'.$this->XMLENC($this->SEGMENTS[$segcode][0]).'"' : '';
-                    $xml .= '>';
+                # close the segment
+                $xml .= '</segm>';
 
-                    # make our elements
-                    $xml .= $this->_proc_element($segcode, $elements);
-
-                    # close the segment
-                    $xml .= '</segm>';
-
-                    # keep track
-                    $this->lastloop = $curloop;
-                }
-                return $xml;
-            }
-            return null;
-        }
-
-/*
-        string = _proc_element($segment_code, @elements)
-
-        This is a private method called by C<_proc_segment()>.  Each segment consists of
-        elements, this is where they are processed.
-*/
-        private function _proc_element($segcode, $elements) {
-            //my ($self, $segcode, @elements) = @_;
-            $i = 1;
-            $xml = '';
-            foreach ($elements as $element) {
-                if (preg_match('/[0-9A-Za-z]/',$element,$matches)) {
-                    $elename = null;
-                    $elename = ($i >= 10) ? $segcode . $i : $segcode . '0' . $i;
-                    $xml .= '<elem code="'. $this->XMLENC($elename) . '"';
-                    if ($this->ELEMENTS[$elename]) {
-                        $xml .= ' desc="' . $this->XMLENC($this->ELEMENTS[$elename][0]) . '"';
-                    }
-                    $xml .= '>' . $this->XMLENC($element) . '</elem>';
-                }
-                $i++;
+                # keep track
+                $this->lastloop = $curloop;
             }
             return $xml;
         }
+        return null;
+    }
 
-
-        /*
-        string = _openloop($loop_to_open, $last_opened_loop)
-
-
-        This is an internal private method.  It will either open a loop if we can
-        or return nothing.
-        */
-        private function _openloop($newloop, $lastloop) {
-            if ($this->_CANHAVE($lastloop, $newloop)) {
-                array_push($this->_LOOPS, $newloop);
-                return '<'.$this->XMLENC($newloop).'>';
+    /*
+     * string = _proc_segment_in_child($segment_data);
+     * This is an internal private method that processes a segment using $IN_CHILD.
+     * It is called by C<_proc_segment()> when $IN_CHILD is defined.
+    */
+    private function _proc_segment_in_child($segment) {
+        $segment = str_replace("\n",'',$segment);
+        $this->lastloop = (strlen($this->lastloop)) ? $this->lastloop : '';
+        if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
+            //my ($segcode, @elements) = split(/$self->{DES}/, $segment);
+            list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
+            if ($segcode and $segcode == "ST") {
+                ##     \@_LOOPS, $ASCX12::Catalogs::IS_CHILD;
             }
-            return null;
-        }
-
-/*
-        void = _closeloop($loop_to_close, $last_opened_loop, $current_segment, $trigger)
-
-        This routine is a private method.  It will recurse to close any open loops.
-*/
-        private function _closeloop($newloop, $lastloop, $currentseg, $once = 0) {
-            //$lastloop ||= '';
-            $this->lastloop = (strlen($this->lastloop)) ? $this->lastloop : '';
-            $xml = null;
-            # Case when there are two consecutive loops
-            if ($newloop && $lastloop && $currentseg == $lastloop && ($currentseg != '')) {
-                $xml = $this->_execclose($lastloop);
-                return $xml;
+            else if ($segcode) {
+                ## warn "segcode = $segcode\n";
             }
-            # "Standard Case"
-            else if ($this->_CANHAVE($newloop, $lastloop)) {
-                $xml = $this->_execclose($lastloop);
-                return $xml;
-            }
-            # Recusrively close loops
             else {
-                $parent_loops_to_close = [];
-                if (count($this->_LOOPS)) {
-                    #Close in reverse order
-                    foreach (array_reverse($this->_LOOPS) as $testloop) {
-                        # found a loop, see which ones we ough to close
-                        if ($testloop == $newloop) {
-                            if ($parent_loops_to_close) {
-                                foreach ($parent_loops_to_close as $closeme) {
-                                    if ($closeme) {
-                                        $xml .= $this->_execclose($closeme);
-                                    }
+                ## warn "no segcode\n";
+                ## final loop close
+                return $this->_closeloop('', $this->lastloop, '');
+            }
+            $xml = '';
+            $is_child = null;
+            // get the last element
+            $curloop = $this->_LOOPS[count($this->_LOOPS) - 1];
+            while(is_null($is_child)) {
+                $is_child = $this->CATALOGS->IS_CHILD[$curloop][$segcode];
+                if (is_null($is_child)) {
+                    $xml .= $this->_execclose($curloop);
+                    $curloop = $this->_LOOPS[count($this->_LOOPS) - 1];
+                }
+            }
+
+            if ($elements) {
+                # check to see if we need to open a loop
+                if ($is_child == 0) {
+                    array_push($this->_LOOPS, $segcode);
+                    $xml .= '<'.$this->XMLENC($segcode).'>';
+                }
+
+                # now the standard segment (and elements)
+                $xml .= '<segm code="'.$this->XMLENC($segcode).'"';
+                $xml .= $this->SEGMENTS[$segcode] ? ' desc="'.$this->XMLENC($this->SEGMENTS[$segcode][0]).'"' : '';
+                $xml .= '>';
+
+                # make our elements
+                $xml .= $this->_proc_element($segcode, $elements);
+
+                # close the segment
+                $xml .= '</segm>';
+
+                # keep track
+                $this->lastloop = $curloop;
+            }
+            return $xml;
+        }
+        return null;
+    }
+
+    /*
+     * string = _proc_element($segment_code, @elements)
+     *
+     * This is a private method called by C<_proc_segment()>.  Each segment consists of
+     * elements, this is where they are processed.
+    */
+    private function _proc_element($segcode, $elements) {
+        $i = 1;
+        $xml = '';
+        foreach ($elements as $element) {
+            if (preg_match('/[0-9A-Za-z]/',$element,$matches)) {
+                $elename = null;
+                $elename = ($i >= 10) ? $segcode . $i : $segcode . '0' . $i;
+                $xml .= '<elem code="'. $this->XMLENC($elename) . '"';
+                if ($this->ELEMENTS[$elename]) {
+                    $xml .= ' desc="' . $this->XMLENC($this->ELEMENTS[$elename][0]) . '"';
+                }
+                $xml .= '>' . $this->XMLENC($element) . '</elem>';
+            }
+            $i++;
+        }
+        return $xml;
+    }
+
+
+   /*
+    * string = _openloop($loop_to_open, $last_opened_loop)
+    * This is an internal private method.  It will either open a loop if we can
+    * or return nothing.
+    */
+    private function _openloop($newloop, $lastloop) {
+        if ($this->_CANHAVE($lastloop, $newloop)) {
+            array_push($this->_LOOPS, $newloop);
+            return '<'.$this->XMLENC($newloop).'>';
+        }
+        return null;
+    }
+
+   /*
+    * void = _closeloop($loop_to_close, $last_opened_loop, $current_segment, $trigger)
+    * This routine is a private method.  It will recurse to close any open loops.
+    */
+    private function _closeloop($newloop, $lastloop, $currentseg, $once = 0) {
+        $this->lastloop = (strlen($this->lastloop)) ? $this->lastloop : '';
+        $xml = null;
+        # Case when there are two consecutive loops
+        if ($newloop && $lastloop && $currentseg == $lastloop && ($currentseg != '')) {
+            $xml = $this->_execclose($lastloop);
+            return $xml;
+        }
+        # "Standard Case"
+        else if ($this->_CANHAVE($newloop, $lastloop)) {
+            $xml = $this->_execclose($lastloop);
+            return $xml;
+        }
+        # Recusrively close loops
+        else {
+            $parent_loops_to_close = [];
+            if (count($this->_LOOPS)) {
+                #Close in reverse order
+                foreach (array_reverse($this->_LOOPS) as $testloop) {
+                    # found a loop, see which ones we ough to close
+                    if ($testloop == $newloop) {
+                        if ($parent_loops_to_close) {
+                            foreach ($parent_loops_to_close as $closeme) {
+                                if ($closeme) {
+                                    $xml .= $this->_execclose($closeme);
                                 }
-                                # See if the current loop ought to be closed
-                                if ($once != 1) {
-                                    if ($tmp = $this->_closeloop($newloop, $this->lastloop, $currentseg, 1)) {
-                                        $xml .= $tmp;
-                                    }
-                                }
-                                return $xml;
                             }
+                            # See if the current loop ought to be closed
+                            if ($once != 1) {
+                                if ($tmp = $this->_closeloop($newloop, $this->lastloop, $currentseg, 1)) {
+                                    $xml .= $tmp;
+                                }
+                            }
+                            return $xml;
                         }
-                        # Push into the loops to close
-                        else {
-                            if ($testloop) {
-                                array_push($parent_loops_to_close, $testloop);
-                            }
+                    }
+                    # Push into the loops to close
+                    else {
+                        if ($testloop) {
+                            array_push($parent_loops_to_close, $testloop);
                         }
                     }
                 }
             }
+        }
+        return null;
+    }
+
+   /*
+    * string = _execclose($loop_to_close)
+    *
+    * Private internal method to actually return the XML that signifies
+    * a closed loop.  It is called by C<_closeloop()>.
+    */
+
+    private function _execclose($loop = null) {
+        if (is_null($loop)) {
             return null;
         }
 
-        /*
-        string = _execclose($loop_to_close)
-
-        Private internal method to actually return the XML that signifies a closed
-        loop.  It is called by C<_closeloop()>.
-        */
-
-        private function _execclose($loop = null) {
-            if (is_null($loop)) {
-                return null;
-            }
-
-            if (preg_match('/[A-Za-z0-9]*/', $loop, $matches))
-            {
-                array_pop($this->_LOOPS);
-                //$this->lastloop = $this->_LOOPS[-1];
-                $this->lastloop = $this->_LOOPS[count($this->_LOOPS) - 1];
-                return ($this->XMLENC($loop)) ? '</'.$this->XMLENC($loop).'>' : '';
-            }
-            return null;
+        if (preg_match('/[A-Za-z0-9]*/', $loop, $matches))
+        {
+            array_pop($this->_LOOPS);
+            //$this->lastloop = $this->_LOOPS[-1];
+            $this->lastloop = $this->_LOOPS[count($this->_LOOPS) - 1];
+            return ($this->XMLENC($loop)) ? '</'.$this->XMLENC($loop).'>' : '';
         }
+        return null;
+    }
 
-/*
-    void = _unload_catalog()
-
-    Private method that clears out catalog data and loads standard ASCX12 structure.
-    Also initializes ISA and GS data common to all Catalogs.
-*/
+   /*
+    * void = _unload_catalog()
+    *
+    *  Private method that clears out catalog data and loads standard ASCX12 structure.
+    *  Also initializes ISA and GS data common to all Catalogs.
+    */
     private function _unload_catalog() {
-    //$ASCX12::Catalogs::LOOPNEST = ();
-    //$ASCX12::Catalogs::IS_CHILD = undef;
-    $this->CATALOGS->LOOPNEST = [];
-    $this->CATALOGS->IS_CHILD = null;
-    $this->CATALOGS->load_catalog(0);
-    }
-
-/*
-    boolean = _CANHAVE($parent_loop, $child_loop)
-
-    This is a private static method.  It uses the rules in the L<ASCX12::Catalogs|ASCX12::Catalogs>
-    to determine if a parent is allowed to have the child loop. Returns C<0> or C<1>.
-*/
-    private function _CANHAVE($parent, $child = null) {
-        # root-level can have anything
-        if (!$parent) {
-            return 1;
-        }
-
-        if(is_null($child) || !$child) {
-            return 0;
-        }
-
-        foreach ($this->CATALOGS->LOOPNEST[$parent] as $value) {
-            if ($value == $child) {
-                return 1;
-            }
-        }
-        return 0;
-    }
-
-    private function format_xml($xml) {
-       $dom = dom_import_simplexml(simplexml_load_string($xml))->ownerDocument;
-        $dom->formatOutput = true;
-        return $dom->saveXML();
-    }
-
-    public function load_catalog($catalog) {
-        $this->CATALOGS->load_catalog($catalog);
-    }
-
-    public function dump_catalog() {
-        $this->CATALOGS->dump_catalog();
+        $this->CATALOGS->LOOPNEST = [];
+        $this->CATALOGS->IS_CHILD = null;
+        $this->CATALOGS->load_catalog(0);
     }
 
     /*
-    @TODO:
-    Here are some things that would make this module even better.  They are in no particular order:
+     * boolean = _CANHAVE($parent_loop, $child_loop)
+     * This is a private static method.  It uses the rules in the L<ASCX12::Catalogs|ASCX12::Catalogs>
+     * to determine if a parent is allowed to have the child loop. Returns C<0> or C<1>.
+     */
+     private function _CANHAVE($parent, $child = null) {
+         # root-level can have anything
+         if (!$parent) {
+             return 1;
+         }
 
-    * Error Handling
+         if(is_null($child) || !$child) {
+             return 0;
+         }
 
-    Maybe throw in an error object to keep track of things
+         foreach ($this->CATALOGS->LOOPNEST[$parent] as $value) {
+             if ($value == $child) {
+                 return 1;
+             }
+         }
+         return 0;
+     }
 
-    * Encoding Support
-
-    Anyone that could review to make sure we are using the correct encodings
-    We basically read in the EDI file in binary and use the ASCII HEX-equivalent for the
-    separators.  Many EDI-producing systems use EBCDIC and not UTF-8 so be careful when
-    specifying the values.
-
-    * B<Live> Transaction Set (Catalog) Library
-
-        Make a live repository of transaction set data (catalogs).  I'd really like use XML to describe
-        each catalog and import them to local dbm files or tied hashes during install and via an update
-        script.  This project will be driven if there is adaquate demand.
-
-        According to the ASC X12 website (L<http://www.x12.org>), there are 315 transaction sets.  This module has 4, so
-        there are 311 that could be added.
-
-        Documentation for Catalog 175 (Court Notice Transaction Set) is available from
-        the US Bankruptcy Courts (L<http://www.ebnuscourts.com/documents/edi.adp>).
-
-
-        * XML Documentation
-
-        Create a DTD and maybe even an XML Schema for the XML output.  There ought to be better
-        documentation here.
-    */
+     private function format_xml($xml) {
+        $dom = dom_import_simplexml(simplexml_load_string($xml))->ownerDocument;
+         $dom->formatOutput = true;
+         return $dom->saveXML();
+     }
 }
