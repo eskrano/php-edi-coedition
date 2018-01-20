@@ -135,8 +135,8 @@ class ASCX12 {
      *   This method will transform and EDI file to XML using the configuration information
      *   passed in from the constructor.
      */
-    public function convertfile($infile, $outfile) {
-        $out = $this->convertdata(file_get_contents($infile));
+    public function convertfile($infile, $outfile, $pretty_print = true) {
+        $out = $this->convertdata(file_get_contents($infile), $pretty_print);
         file_put_contents($outfile,$out);
         return 1;
     }
@@ -146,7 +146,7 @@ class ASCX12 {
      * This method will transform an EDI data stream, returning wellformed XML.
      *
      */
-    public function convertdata($in) {
+    public function convertdata($in, $pretty_print = true) {
         if (!preg_match("/$this->ST/", $in)) {
             die("EDI Parsing Error:  Segment Terminator '".$this->ST."' not found");
         }
@@ -163,7 +163,7 @@ class ASCX12 {
         $out .= $this->_proc_segment('');
         $out .=  '</ascx:message>';
 
-        return $this->format_xml($out);
+        return $pretty_print ? $this->format_xml($out) : $out;
     }
 
     /*
@@ -208,26 +208,28 @@ class ASCX12 {
                 }
             }
 
-            $catalog_name = 'Catalog' . $elements[0];
-            $file_name = 'Catalogs/'.$catalog_name.'.php';
-            if (file_exists($file_name)) {
-                include_once($file_name);
-                $catalog_name = "Coedition\\EDI\\Catalogs\\" . $catalog_name;
-                $catalog = new $catalog_name();
-                # add the temp_SEGMENTS to the $SEGMENTS
-                $this->SEGMENTS = array_merge($catalog->temp_SEGMENTS, $this->SEGMENTS);
-                # add the temp_ELEMENTS to the $ELEMENTS
-                $this->ELEMENTS = array_merge($catalog->temp_ELEMENTS, $this->ELEMENTS);
-                # END load additional segments/elements
-            }
-            if ($segcode and $segcode == "ST")
-            {
-                $this->_unload_catalog();
-                $this->CATALOGS->load_catalog($elements[0]);
-                ## IS_CHILD not defined until after Catalog loaded
-                ## Use alternate parsing starting with "ST" segment
-                if (isset($this->CATALOGS->IS_CHILD)) {
-                    return $this->_proc_segment_in_child($segment);
+            if ($elements) {
+                $catalog_name = 'Catalog' . $elements[0];
+                $file_name = 'Catalogs/' . $catalog_name . '.php';
+                if (file_exists($file_name)) {
+                    include_once($file_name);
+                    $catalog_name = "Coedition\\EDI\\Catalogs\\" . $catalog_name;
+                    $catalog = new $catalog_name();
+                    # add the temp_SEGMENTS to the $SEGMENTS
+                    $this->SEGMENTS = array_merge($catalog->temp_SEGMENTS, $this->SEGMENTS);
+                    # add the temp_ELEMENTS to the $ELEMENTS
+                    $this->ELEMENTS = array_merge($catalog->temp_ELEMENTS, $this->ELEMENTS);
+                    # END load additional segments/elements
+                }
+
+                if ($segcode and $segcode == "ST") {
+                    $this->_unload_catalog();
+                    $this->CATALOGS->load_catalog($elements[0]);
+                    ## IS_CHILD not defined until after Catalog loaded
+                    ## Use alternate parsing starting with "ST" segment
+                    if (isset($this->CATALOGS->IS_CHILD)) {
+                        return $this->_proc_segment_in_child($segment);
+                    }
                 }
             }
 
@@ -432,7 +434,12 @@ class ASCX12 {
         {
             array_pop($this->_LOOPS);
             //$this->lastloop = $this->_LOOPS[-1];
-            $this->lastloop = $this->_LOOPS[count($this->_LOOPS) - 1];
+            if (isset($this->_LOOPS[count($this->_LOOPS) - 1])) {
+                $this->lastloop = $this->_LOOPS[count($this->_LOOPS) - 1];
+            }
+            else {
+                $this->lastloop = null;
+            }
             return ($this->XMLENC($loop)) ? '</'.$this->XMLENC($loop).'>' : '';
         }
         return null;
