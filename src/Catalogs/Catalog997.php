@@ -9,21 +9,21 @@ final class Catalog997
     # This is Catalog 997 Specific
     #
     # CODE   => [Description, (M)andatory|(O)ptional, MxUse, LoopID, LoopRepeat]
-    public $temp_SEGMENTS = [
-        'ST ' => ['Transaction Set Header', 'M ', 1, 'ST', 999],
-        'AK1 ' => ['Functional Group Response Header', 'M ', 1, 'ST', 999],
-        'AK2 ' => ['Transaction Set Response Header', 'O ', 1, 'ST', 999],
-        'AK3 ' => ['Data Segment Note', 'O ', 1, 'ST', 999],
-        'AK4 ' => ['Date Element Note', 'O ', 99, 'ST', 999],
-        'AK5 ' => ['Transaction Set Response Trailer', 'C ', 1, 'ST', 999],
-        'AK9 ' => ['Functional Group Response Trailer', 'M ', 1, 'ST', 999],
-        'SE ' => ['Transaction Set Trailer', 'M ', 1, 'ST', 999]
+    public static $temp_SEGMENTS = [
+        'ST' => ['Transaction Set Header', 'M ', 1, 'ST', 999],
+        'AK1' => ['Functional Group Response Header', 'M ', 1, 'ST', 999],
+        'AK2' => ['Transaction Set Response Header', 'O ', 1, 'ST', 999],
+        'AK3' => ['Data Segment Note', 'O ', 1, 'ST', 999],
+        'AK4' => ['Date Element Note', 'O ', 99, 'ST', 999],
+        'AK5' => ['Transaction Set Response Trailer', 'C ', 1, 'ST', 999],
+        'AK9' => ['Functional Group Response Trailer', 'M ', 1, 'ST', 999],
+        'SE' => ['Transaction Set Trailer', 'M ', 1, 'ST', 999]
     ];
 
     #
     # This is Catalog 997 Specific
     #
-    public $temp_ELEMENTS = [
+    public static $temp_ELEMENTS = [
         'ST' => ['Transaction Set Header', 'M', 'ID', 1, 1],
         'ST01' => ['Transaction Set ID', 'M', 'ID', 3, 3],
         'ST02' => ['Transaction Set Control Number', 'M', 'AN', 4, 9],

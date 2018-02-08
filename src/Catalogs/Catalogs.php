@@ -63,7 +63,7 @@ Catalogs can create loop patterns that $LOOPNEST alone was unable to
 unravel. Leaving $IS_CHILD undefined will default to using just $LOOPNEST.
 
 PUBLIC STATIC METHODS
-    void = load_catalog($catalog_number)
+    void = loadCatalog($catalog_number)
 
     This is a static public method that loads the C<$LOOPNEST> reference with
     the appropiate catalog relationship data.  It is called by L<XML-ASCX12|ASCX12>.
@@ -90,7 +90,7 @@ class Catalogs
         997 => null
 	];
 
-	public function load_catalog($catalog) {
+	public function loadCatalog($catalog) {
 		switch($catalog) {
 			case 0:
                 #
@@ -120,17 +120,13 @@ class Catalogs
 
             case 997:
                 #
-                # CATALOG 920 - Functional Acknowledgement
+                # CATALOG 997 - Functional Acknowledgement
                 #
-                $this->push(['ST'], ['AK2']);
-                $this->push(['AK2'], ['AK3']);
-
-				#
-				# CATALOG 997 -
-				#
 				$this->push(['GS'], ['ST']);
-				$this->push(['ST'], ['AK1']);
-				$this->push(['AK1'], ['AK2','AK3','AK4','AK5','AK9']);
+                $this->push(['ST'], ['AK1','SE']);
+				$this->push(['AK1'],['AK2','AK3','AK4','AK5','AK6','AK7','AK8','AK9']);
+                $this->push(['SE'], ['GE']);
+				$this->push(['GE'], ['IEA']);
         		break;
             #
             # XXX Add your catalogs here following the pattern.
@@ -179,9 +175,8 @@ class Catalogs
                 #
                 # CATALOG 832
                 #
-                $this->push(['ST'], ['N1']);
-            	$this->push(['N1'], ['LIN']);
-            	$this->push(['LIN'],['CTP']);
+                $this->push(['ST'], ['LIN']);
+            	$this->push(['LIN'],['PID', 'PO4', 'CTP']);
         		break;
 
             case 850:
@@ -200,75 +195,32 @@ class Catalogs
                 #
                 $this->push(['GS'], ['ST']);
             	$this->push(['ST'], ['BAK']);
-            	$this->push(['BAK'], ['N1','N2','N3','N4','N9','PO1','PID','ACK','CTT']);
-            	#$this->push (['N1'], ['N2','N3','N4','PO1']);
-            	#$this->push ['PO1'], ['PID']);
-            	#$this->push ['PID'], ['ACK']);
-            	#$this->push ['ACK'], ['CTT']);
-            	#$this->push ['CTT'], ['SE']);
+            	$this->push(['BAK'], ['PO1','ACK']);
+            	$this->push(['ACK'], ['CTT']);
+            	$this->push(['CTT'], ['SE']);
         		break;
 
             case 846:
                 #
                 # CATALOG 846
                 #
-                $this->push(['GS'], ['ST']);
-            	$this->push(['ST'], ['BIA','DTM','REF','N1']);
-            	#$this->push(['REF'], ['N1']);
-            	$this->push(['N1'], ['LIN']);
-            	$this->push(['LIN'], ['PID','QTY','SCH']);
-            	#$this->push(['PID'], ['QTY']);
-            	#$this->push(['QTY'], ['SCH']);
+            	$this->push(['ST'], ['BIA','CTT','SE']);
+            	$this->push(['BIA'], ['LIN']);
+            	$this->push(['LIN'], ['CTP','QTY']);
+				$this->push(['SE'], ['GE']);
+				$this->push(['GE'], ['IEA']);
 
-        #	    $this->IS_CHILD['ISA']['ISA'] = 0;
-        #	    $this->IS_CHILD['ISA']['GS']  = 0;
-        #	    $this->IS_CHILD['GS']['ST']   = 0;
-        #	    $this->IS_CHILD['ST']['SE']   = 1;
-        #	    $this->IS_CHILD['GS']['GE']   = 1;
-        #	    $this->IS_CHILD['ISA']['IEA'] = 1;
-        #	    $this->IS_CHILD['ST']['BIA']  = 1;
-        #	    $this->IS_CHILD['ST']['DTM']  = 1;
-        #	    $this->IS_CHILD['ST']['REF']  = 1;
-        #	    $this->IS_CHILD['ST']['N1']   = 0;
-        #	    $this->IS_CHILD['N1']['LIN']  = 0;
-        #	    $this->IS_CHILD['LIN']['PID'] = 1;
-        #	    $this->IS_CHILD['LIN']['QTY'] = 1;
-        #	    $this->IS_CHILD['LIN']['SCH'] = 1;
                 break;
             case 856:
                 #
                 # CATALOG 856
                 #
-                $this->push(['GS'], ['ST']);
             	$this->push(['ST'], ['BSN']);
-            	$this->push(['BSN'], ['HL']);
-            	$this->push(['HL'], ['TD1','TD5','REF','DTM','N1']);
-            	$this->push(['N1'], ['N1','N2','N3','N4']);
-            	$this->push(['HL'], ['HL','PRF','TD1','REF']);
-            	$this->push(['HL'], ['HL','REF','MAN']);
-            	$this->push(['HL'], ['HL','LIN','SN1']);
-
-            	$this->IS_CHILD['ISA']['ISA'] = 0;
-            	$this->IS_CHILD['ISA']['GS'] = 0;
-            	$this->IS_CHILD['GS']['ST'] = 0;
-            	$this->IS_CHILD['ST']['BSN'] = 1;
-            	$this->IS_CHILD['ST']['HL'] = 0;
-            	$this->IS_CHILD['HL']['TD1'] = 1;
-            	$this->IS_CHILD['HL']['TD5'] = 1;
-            	$this->IS_CHILD['HL']['REF'] = 1;
-            	$this->IS_CHILD['HL']['DTM'] = 1;
-            	$this->IS_CHILD['HL']['PRF'] = 1;
-            	$this->IS_CHILD['HL']['TD1'] = 1;
-            	$this->IS_CHILD['HL']['MAN'] = 1;
-            	$this->IS_CHILD['HL']['LIN'] = 1;
-            	$this->IS_CHILD['HL']['SN1'] = 1;
-            	$this->IS_CHILD['ST']['N1'] = 0;
-            	$this->IS_CHILD['N1']['N3'] = 1;
-            	$this->IS_CHILD['N1']['N4'] = 1;
-            	$this->IS_CHILD['ST']['CTT'] = 1;
-            	$this->IS_CHILD['ST']['SE'] = 1;
-            	$this->IS_CHILD['GS']['GE'] = 1;
-            	$this->IS_CHILD['ISA']['IEA'] = 1;
+            	$this->push(['BSN'], ['HL','SE']);
+				$this->push(['HL'], ['TD5','REF','DTM','PRF','LIN','SN1','CTT']);
+				$this->push(['ST'], ['SE']);
+				$this->push(['SE'], ['GE']);
+				$this->push(['GE'], ['IEA']);
         		break;
 
             default:
@@ -277,7 +229,7 @@ class Catalogs
     	}
 	}
 
-	public function has_catalog($catalog) {
+	public function hasCatalog($catalog) {
 		return isset($this->catalog_hash[$catalog]);
 	}
 

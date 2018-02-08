@@ -102,9 +102,15 @@ Private Variables
 namespace Coedition\EDI;
 use Coedition\EDI\Catalogs\Catalogs;
 use Coedition\EDI\Catalogs\Segments;
+use Coedition\EDI\Catalogs\Catalog832;
+use Coedition\EDI\Catalogs\Catalog846;
+use Coedition\EDI\Catalogs\Catalog850;
+use Coedition\EDI\Catalogs\Catalog855;
+use Coedition\EDI\Catalogs\Catalog856;
+use Coedition\EDI\Catalogs\Catalog997;
 
 class ASCX12 {
-
+    const CATALOGS = [832, 846, 850, 855, 856, 997];
     private $_LOOPS = [];
     private $_XMLHEAD = '<?xml version="1.0"?><ascx:message xmlns:ascx="http://www.vermonster.com/LIB/xml-ascx12-01/ascx.rdf" xmlns:loop="http://www.vermonster.com/LIB/xml-ascx12-01/loop.rdf">';
 
@@ -121,12 +127,12 @@ class ASCX12 {
         $this->DES = $des;
         $this->SBS = $sbs;
         $this->CATALOGS = new Catalogs();
-        $this->SEGMENTS = Segments::$SEGMENTS;
-        $this->ELEMENTS = Segments::$ELEMENTS;
+        $this->SEGMENTS = Segments::SEGMENTS;
+        $this->ELEMENTS = Segments::ELEMENTS;
     }
 
-    public function load_catalog($catalog) {
-        $this->CATALOGS->load_catalog($catalog);
+    public function loadCatalog($catalog) {
+        $this->CATALOGS->loadCatalog($catalog);
     }
 
     /*
@@ -144,26 +150,29 @@ class ASCX12 {
     /*
      * string = $obj->convertdata($input)
      * This method will transform an EDI data stream, returning wellformed XML.
-     *
      */
     public function convertdata($in, $pretty_print = true) {
+        // replace some commonly used delimiters with the ones we parse for..
+        $in = str_replace('*', '|', $in);
+        $in = str_replace('~', "\n", $in);
+
         if (!preg_match("/$this->ST/", $in)) {
-            die("EDI Parsing Error:  Segment Terminator '".$this->ST."' not found");
+            throw new \Exception("EDI Parsing Error:  Segment Terminator '".$this->ST."' not found");
         }
         if (!preg_match("/$this->DES/", $in)) {
-            die("EDI Parsing Error:  Data Element Seperator '".$this->DES."' not found");
+            throw new \Exception("EDI Parsing Error:  Data Element Seperator '".$this->DES."' not found");
         }
 
-        $this->_unload_catalog();
+        $this->_unloadCatalog();
         $out = $this->_XMLHEAD;
 
         foreach (explode($this->ST, $in) as $row) {
-            $out .= $this->_proc_segment($row);
+            $out .= $this->_procSegment($row);
         }
-        $out .= $this->_proc_segment('');
+        $out .= $this->_procSegment('');
         $out .=  '</ascx:message>';
 
-        return $pretty_print ? $this->format_xml($out) : $out;
+        return $pretty_print ? $this->formatXml($out) : $out;
     }
 
     /*
@@ -187,13 +196,13 @@ class ASCX12 {
     }
 
     /*
-     * string = _proc_segment($segment_data);
+     * string = _procSegment($segment_data);
      * This is an internal private method that processes a segment using $LOOPNEST.
      * It is called by C<convertfile()> or C<convertdata()> while looping per-segment.
      */
-    private function _proc_segment($segment) {
+    private function _procSegment($segment) {
         if (isset($this->CATALOGS->IS_CHILD)) {
-            return $this->_proc_segment_in_child($segment);
+            return $this->_procSegment_in_child($segment);
         }
         $segment = str_replace("\n",'',$segment);
         if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
@@ -210,25 +219,25 @@ class ASCX12 {
 
             if ($elements) {
                 $catalog_name = 'Catalog' . $elements[0];
-                $file_name = 'Catalogs/' . $catalog_name . '.php';
-                if (file_exists($file_name)) {
-                    include_once($file_name);
+                //$file_name = 'Catalogs/' . $catalog_name . '.php';
+                if (in_array($elements[0], self::CATALOGS)) {
+                    //include_once($file_name);
                     $catalog_name = "Coedition\\EDI\\Catalogs\\" . $catalog_name;
                     $catalog = new $catalog_name();
                     # add the temp_SEGMENTS to the $SEGMENTS
-                    $this->SEGMENTS = array_merge($catalog->temp_SEGMENTS, $this->SEGMENTS);
+                    $this->SEGMENTS = array_merge(($catalog_name)::$temp_SEGMENTS, $this->SEGMENTS);
                     # add the temp_ELEMENTS to the $ELEMENTS
-                    $this->ELEMENTS = array_merge($catalog->temp_ELEMENTS, $this->ELEMENTS);
+                    $this->ELEMENTS = array_merge(($catalog_name)::$temp_ELEMENTS, $this->ELEMENTS);
                     # END load additional segments/elements
                 }
 
                 if ($segcode and $segcode == "ST") {
-                    $this->_unload_catalog();
-                    $this->CATALOGS->load_catalog($elements[0]);
+                    $this->_unloadCatalog();
+                    $this->CATALOGS->loadCatalog($elements[0]);
                     ## IS_CHILD not defined until after Catalog loaded
                     ## Use alternate parsing starting with "ST" segment
                     if (isset($this->CATALOGS->IS_CHILD)) {
-                        return $this->_proc_segment_in_child($segment);
+                        return $this->_procSegment_in_child($segment);
                     }
                 }
             }
@@ -255,7 +264,7 @@ class ASCX12 {
                 $xml .= '>';
 
                 # make our elements
-                $xml .= $this->_proc_element($segcode, $elements);
+                $xml .= $this->_procElement($segcode, $elements);
 
                 # close the segment
                 $xml .= '</segm>';
@@ -269,16 +278,19 @@ class ASCX12 {
     }
 
     /*
-     * string = _proc_segment_in_child($segment_data);
+     * string = _procSegment_in_child($segment_data);
      * This is an internal private method that processes a segment using $IN_CHILD.
-     * It is called by C<_proc_segment()> when $IN_CHILD is defined.
+     * It is called by C<_procSegment()> when $IN_CHILD is defined.
     */
-    private function _proc_segment_in_child($segment) {
+    private function _procSegment_in_child($segment) {
         $segment = str_replace("\n",'',$segment);
         $this->lastloop = (strlen($this->lastloop)) ? $this->lastloop : '';
         if (preg_match('/[0-9A-Za-z]*/', $segment, $matches)) {
             //my ($segcode, @elements) = split(/$self->{DES}/, $segment);
-            list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
+            //list($segcode, $elements) = preg_split('/'.$this->DES.'/', $segment);
+            $elements = explode($this->DES, $segment);
+            $segcode = array_shift($elements);
+
             if ($segcode and $segcode == "ST") {
                 ##     \@_LOOPS, $ASCX12::Catalogs::IS_CHILD;
             }
@@ -295,6 +307,18 @@ class ASCX12 {
             // get the last element
             $curloop = $this->_LOOPS[count($this->_LOOPS) - 1];
             while(is_null($is_child)) {
+                if (!isset($this->CATALOGS->IS_CHILD[$curloop][$segcode])) {
+                    echo "Catalog configuration problem";
+                    // DEBUGGING
+                    /*
+                    echo "is_child array\n";
+                    print_r($this->CATALOGS->IS_CHILD);
+                    echo "segment: $segment\n";
+                    echo "is_child curloop: $curloop\n";
+                    echo "is_child segcode: $segcode\n";
+                    */
+                    exit;
+                }
                 $is_child = $this->CATALOGS->IS_CHILD[$curloop][$segcode];
                 if (is_null($is_child)) {
                     $xml .= $this->_execclose($curloop);
@@ -315,7 +339,7 @@ class ASCX12 {
                 $xml .= '>';
 
                 # make our elements
-                $xml .= $this->_proc_element($segcode, $elements);
+                $xml .= $this->_procElement($segcode, $elements);
 
                 # close the segment
                 $xml .= '</segm>';
@@ -329,12 +353,12 @@ class ASCX12 {
     }
 
     /*
-     * string = _proc_element($segment_code, @elements)
+     * string = _procElement($segment_code, @elements)
      *
-     * This is a private method called by C<_proc_segment()>.  Each segment consists of
+     * This is a private method called by C<_procSegment()>.  Each segment consists of
      * elements, this is where they are processed.
     */
-    private function _proc_element($segcode, $elements) {
+    private function _procElement($segcode, $elements) {
         $i = 1;
         $xml = '';
         foreach ($elements as $element) {
@@ -342,7 +366,8 @@ class ASCX12 {
                 $elename = null;
                 $elename = ($i >= 10) ? $segcode . $i : $segcode . '0' . $i;
                 $xml .= '<elem code="'. $this->XMLENC($elename) . '"';
-                if ($this->ELEMENTS[$elename]) {
+                if (isset($this->ELEMENTS[$elename]) && $this->ELEMENTS[$elename]) {
+                //if ($this->ELEMENTS[$elename]) {
                     $xml .= ' desc="' . $this->XMLENC($this->ELEMENTS[$elename][0]) . '"';
                 }
                 $xml .= '>' . $this->XMLENC($element) . '</elem>';
@@ -353,11 +378,11 @@ class ASCX12 {
     }
 
 
-   /*
-    * string = _openloop($loop_to_open, $last_opened_loop)
-    * This is an internal private method.  It will either open a loop if we can
-    * or return nothing.
-    */
+    /*
+     * string = _openloop($loop_to_open, $last_opened_loop)
+     * This is an internal private method.  It will either open a loop if we can
+     * or return nothing.
+     */
     private function _openloop($newloop, $lastloop) {
         if ($this->_CANHAVE($lastloop, $newloop)) {
             array_push($this->_LOOPS, $newloop);
@@ -366,10 +391,10 @@ class ASCX12 {
         return null;
     }
 
-   /*
-    * void = _closeloop($loop_to_close, $last_opened_loop, $current_segment, $trigger)
-    * This routine is a private method.  It will recurse to close any open loops.
-    */
+    /*
+     * void = _closeloop($loop_to_close, $last_opened_loop, $current_segment, $trigger)
+     * This routine is a private method.  It will recurse to close any open loops.
+     */
     private function _closeloop($newloop, $lastloop, $currentseg, $once = 0) {
         $this->lastloop = (strlen($this->lastloop)) ? $this->lastloop : '';
         $xml = null;
@@ -418,12 +443,12 @@ class ASCX12 {
         return null;
     }
 
-   /*
-    * string = _execclose($loop_to_close)
-    *
-    * Private internal method to actually return the XML that signifies
-    * a closed loop.  It is called by C<_closeloop()>.
-    */
+    /*
+     * string = _execclose($loop_to_close)
+     *
+     * Private internal method to actually return the XML that signifies
+     * a closed loop.  It is called by C<_closeloop()>.
+     */
 
     private function _execclose($loop = null) {
         if (is_null($loop)) {
@@ -445,44 +470,44 @@ class ASCX12 {
         return null;
     }
 
-   /*
-    * void = _unload_catalog()
-    *
-    *  Private method that clears out catalog data and loads standard ASCX12 structure.
-    *  Also initializes ISA and GS data common to all Catalogs.
-    */
-    private function _unload_catalog() {
+    /*
+     * void = _unloadCatalog()
+     *
+     *  Private method that clears out catalog data and loads standard ASCX12 structure.
+     *  Also initializes ISA and GS data common to all Catalogs.
+     */
+    private function _unloadCatalog() {
         $this->CATALOGS->LOOPNEST = [];
         $this->CATALOGS->IS_CHILD = null;
-        $this->CATALOGS->load_catalog(0);
+        $this->CATALOGS->loadCatalog(0);
     }
 
     /*
      * boolean = _CANHAVE($parent_loop, $child_loop)
-     * This is a private static method.  It uses the rules in the L<ASCX12::Catalogs|ASCX12::Catalogs>
-     * to determine if a parent is allowed to have the child loop. Returns C<0> or C<1>.
+     * This is a private static method.  It uses the rules in the ASCX12::Catalogs|ASCX12::Catalogs
+     * to determine if a parent is allowed to have the child loop. Returns 0 or 1.
      */
-     private function _CANHAVE($parent, $child = null) {
-         # root-level can have anything
-         if (!$parent) {
-             return 1;
-         }
+    private function _CANHAVE($parent, $child = null) {
+        # root-level can have anything
+        if (!$parent) {
+            return 1;
+        }
 
-         if(is_null($child) || !$child) {
-             return 0;
-         }
+        if(is_null($child) || !$child) {
+            return 0;
+        }
 
-         foreach ($this->CATALOGS->LOOPNEST[$parent] as $value) {
-             if ($value == $child) {
-                 return 1;
-             }
-         }
-         return 0;
-     }
+        foreach ($this->CATALOGS->LOOPNEST[$parent] as $value) {
+            if ($value == $child) {
+                return 1;
+            }
+        }
+        return 0;
+    }
 
-     private function format_xml($xml) {
+    private function formatXml($xml) {
         $dom = dom_import_simplexml(simplexml_load_string($xml))->ownerDocument;
-         $dom->formatOutput = true;
-         return $dom->saveXML();
-     }
+        $dom->formatOutput = true;
+        return $dom->saveXML();
+    }
 }
