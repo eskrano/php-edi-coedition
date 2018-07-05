@@ -48,19 +48,20 @@ PUBLIC STATIC VARIABLES
 namespace Coedition\EDI\Catalogs;
 
 class Segments {
-    public static $VERSION = '0.1';
-    public static $SEGMENTS = [
+    const VERSION = '0.1';
+    const SEGMENTS = [
    # CODE   => [Description, (M)andatory|(O)ptional, MxUse, LoopID, LoopRepeat]
     'ISA'  => ['Interchange Control Header',                'M', 1,  'ISA',  0]
    ,'IEA'  => ['Interchange Control Trailer',               'M', 1,  'ISA',  0]
    ,'GS'   => ['Functional Group Header',                   'M', 1,  'GS',   0]
    ,'GE'   => ['Functional Group Trailer',                  'M', 1,  'GS',   0]
    ,'ST'   => ['Transaction Set Header',                    'M', 1,  'ST',   0]
-   ,'SE'   => ['Transaction Set Trailer',                   'M', 1,  'ST',   0]
+   ,'SE'   => ['Transaction Set Trailer',                   'M', 1,  'SE',   0]
 
    #
    # This is Catalog 110 Specific
    #
+   /*
    ,'B3'   => ['Beg Seg for Carriers Invoice',              'M', 1,  'ST',   0]
    ,'B3A'  => ['Invoice Type',                              'O', 1,  'ST',   0]
    ,'ITD'  => ['Invoice Type Deferred Terms of Sale',       'O', 1,  'ST',   0]
@@ -114,9 +115,11 @@ class Segments {
    ,'REF'  => ['Reference Numbers',                         'O', 3,'NM1', 9999]
    ,'PER'  => ['Telephone Number',                          'O', 1,'NM1', 9999]
    ,'LE'    => ['End of CED loops',                         'M', 1, 'CDS',   0]
+   */
 ];
 
-public static $ELEMENTS = [
+const ELEMENTS = [
+    /*
     # CODE   => [Description, (M)andatory|(O)ptional, Type, Min, Max]
      'ISA01' => ['Authorization Information Qualifier', 'M', 'ID', 2,  2]
     ,'ISA02' => ['Authorization Information',           'M', 'AN', 10, 10]
@@ -153,10 +156,10 @@ public static $ELEMENTS = [
     ,'B312'  => ['Billing Date',                        'O', 'DT', 8, 8]
     ,'B313'  => ['Settlement Option',                   'O', 'ID', 2, 2]
     ,'B3A01' => ['Transaction Type Codes',              'M', 'ID', 2, 2]
-    ,'B3A02' => ['Number of Transactions',              'O', 'N0', 1, 5]
+    ,'B3A02' => ['Number of Transactions',              'O', 'NO', 1, 5]
     ,'ITD01' => ['Terms Type Code',                     'O', 'ID', 2, 2]
     ,'ITD02' => ['Terms Basis Date Code',               'O', 'ID', 1, 2]
-    ,'ITD07' => ['Terms Net Days',                      'O', 'N0', 1, 3]
+    ,'ITD07' => ['Terms Net Days',                      'O', 'NO', 1, 3]
     ,'N101'  => ['Entity Identifier Code',              'M', 'ID', 2, 3]
     ,'N102'  => ['Name',                                'X', 'AN', 1, 60]
     ,'N201'  => ['Name',                                'M', 'AN', 1, 60]
@@ -169,7 +172,7 @@ public static $ELEMENTS = [
     ,'N901'  => ['Reference Identification Qualifier',  'M', 'ID', 2, 3]
     ,'N902'  => ['Reference Identification',            'X', 'AN', 1, 30]
     ,'N903'  => ['Free-Form Description',               'X', 'AN', 1, 45]
-    ,'LX01'  => ['Assigned Number',                     'M', 'N0', 1, 6]
+    ,'LX01'  => ['Assigned Number',                     'M', 'NO', 1, 6]
     ,'P101'  => ['Pickup or Delivery Code',             'O', 'ID', 1, 2]
     ,'P102'  => ['Pickup Date',                         'M', 'DT', 8, 8]
     ,'P103'  => ['Date/Time Qualifier',                 'M', 'ID', 3, 3]
@@ -195,15 +198,15 @@ public static $ELEMENTS = [
     ,'RMT02' => ['Reference Identification',            'M', 'AN', 1, 30]
     ,'NTE01' => ['Note Reference Code',                 'O', 'ID', 3, 3]
     ,'NTE02' => ['Free-Form Message',                   'M', 'AN', 1, 80]
-    ,'L501'  => ['Lading Line Item Number',             'O', 'N0', 1, 3]
+    ,'L501'  => ['Lading Line Item Number',             'O', 'NO', 1, 3]
     ,'L502'  => ['Lading Description',                  'O', 'AN', 1, 50]
     ,'L503'  => ['Commodity Code',                      'X', 'AN', 1, 30]
     ,'L504'  => ['Commodity Code Qualifier',            'X', 'ID', 1, 1]
     ,'L505'  => ['Packaging Code',                      'O', 'AN', 3, 5]
-    ,'L001'  => ['Lading Line Item Number',             'O', 'N0', 1, 3]
+    ,'L001'  => ['Lading Line Item Number',             'O', 'NO', 1, 3]
     ,'L004'  => ['Weight',                              'X', 'R', 1, 10]
     ,'L005'  => ['Weight Qualifier',                    'X', 'ID', 1, 2]
-    ,'L008'  => ['Lading Quantity',                     'X/Z', 'N0', 1, 7]
+    ,'L008'  => ['Lading Quantity',                     'X/Z', 'NO', 1, 7]
     ,'L009'  => ['Packaging Form Code',                 'X', 'ID', 3, 3]
     ,'L011'  => ['Weight Unit Code',                    'O', 'ID', 1, 1]
     ,'L013'  => ['Charge Count',                        'X/Z', 'R', 1, 15]
@@ -230,7 +233,7 @@ public static $ELEMENTS = [
     ,'L121'  => ['Amount',                              'O', 'N2', 1, 15]
     ,'L305'  => ['Charge',                              'O', 'N2', 1, 12]
     ,'L308'  => ['Special Charge or Allowance Code',    'O', 'ID', 3, 3]
-    ,'SE01'  => ['Number of Included Segments',         'M', 'N0', 1, 10]
+    ,'SE01'  => ['Number of Included Segments',         'M', 'NO', 1, 10]
     ,'SE02'  => ['Transaction Set Control Number',      'M', 'AN', 4, 9]
     ,'GE01'  => ['Number of Transaction Sets Included', 'M', 'NO', 1, 6]
     ,'GE02'  => ['Group Control Number',                'M', 'NO', 1, 9]
@@ -295,8 +298,34 @@ public static $ELEMENTS = [
     ,'PER03'  => ['Communications Number Qualifier',     'M', 'ID', 2, 2]
     ,'PER04'  => ['Communications Number',               'M', 'ID', 1, 80]
     ,'LE01'   => ['Loop Identifier Code',                'M', 'ID', 1, 4]
-    ,'SE01'   => ['Transaction Set Identifier Code',     'M', 'N0', 1, 10]
+    ,'SE01'   => ['Transaction Set Identifier Code',     'M', 'NO', 1, 10]
     ,'SE02'   => ['Transaction Set Control Number',      'M', 'AN', 4, 9]
+
+    // 850 specific
+    ,'BEG01'   => ['Transaction Set Purpose Code',       'M', 'ID', 2, 2]
+    ,'BEG02'   => ['Purchase Order Type Code (DS)',      'M', 'ID', 2, 2]
+    ,'BEG03'   => ['Purchase Order Number',              'M', 'AN', 1, 20]
+    ,'BEG04'   => ['Unused',                             'M', 'ID', 0, 0]
+    ,'BEG05'   => ['Date',                               'M', 'DT', 8, 8]
+
+    ,'PO101'   => ['Assigned Identification',            'M', 'NO', 1, 4]
+    ,'PO102'   => ['Quantity Ordered',                   'M', 'NO', 1, 10]
+    ,'PO103'   => ['Unit or Basis for Measurement',      'M', 'ID', 2, 2]
+    ,'PO104'   => ['Unit Price',                         'M', 'N2', 4, 10]
+    ,'PO105'   => ['Unused',                             'M', 'ID', 0, 0]
+    ,'PO106'   => ['Product/Service ID Qualifier (UP)',  'M', 'ID', 2, 2]
+    ,'PO107'   => ['Product/Service ID',                 'M', 'AN', 1, 18]
+    ,'PO108'   => ['Product/Service ID Qualifier (BP)',  'M', 'ID', 2, 2]
+    ,'PO109'   => ['Product/Service ID',                 'M', 'AN', 1, 20]
+
+    ,'TD501'   => ['Routing Sequence Code',              'M', 'ID', 1, 2]
+    ,'TD502'   => ['Identification Code Qualifier',      'M', 'ID', 1, 2]
+    ,'TD503'   => ['Identification Code',                'M', 'AN', 1, 4]
+
+
+    ,'CTT01'   => ['Number of Line Items',               'M', 'NO', 1, 6]
+
+   */
 ];
 
 }

@@ -1,26 +1,12 @@
 <?php
 
-include_once('../src/ASCX12.php');
-include_once('../src/Catalogs/Catalog832.php');
-include_once('../src/Catalogs/Catalog846.php');
-include_once('../src/Catalogs/Catalog850.php');
-include_once('../src/Catalogs/Catalog855.php');
-include_once('../src/Catalogs/Catalog856.php');
-include_once('../src/Catalogs/Catalog997.php');
-include_once('../src/Catalogs/Catalogs.php');
-include_once('../src/Catalogs/Segments.php');
+use Coedition\EDI\ASCX12;
 
-/*
-    @TODO path problem?
-    test runs correctly when executed from the Catalogs directory
-    but fails from outside dir
-    peridot ../test/ascx12.spec.php
-*/
 describe('ASCX12', function() {
     it('matches perl output', function() {
-        $ascx12 = new \Coedition\EDI\ASCX12("\n","|");
+        $ascx12 = new ASCX12("\n","|");
         $perl_xml = preg_replace('/>/',">\r",getPerlOutput());
-        $data = $ascx12->convertdata(file_get_contents('Catalogs/997-sample.edi'));
+        $data = $ascx12->convertdata(file_get_contents('example/997-sample.edi'));
         $php_xml = preg_replace('/>/',">\r",$data);
         assert(count($perl_xml) == count($php_xml) && count($perl_xml));
         $rows_ok = true;
