@@ -27,7 +27,8 @@ class Catalog850CreateEdi implements CreateEdi{
      * create_edi() main function
      * @return string
      */
-    public function __invoke(array $order_body, int $interchange_control_num, int $transaction_control_num) : string {
+    public function __invoke($order_id, array $order_body, int $interchange_control_num, int $transaction_control_num) : string {
+        $this->order_id = $order_id;
         $this->order_body = $order_body;
         $this->interchange_control_number = $interchange_control_num;
         $this->transaction_control_number = $transaction_control_num;
