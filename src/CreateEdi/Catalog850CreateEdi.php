@@ -11,6 +11,7 @@ use Coedition\EDI\Catalogs\Catalog850;
 
 class Catalog850CreateEdi implements CreateEdi{
     const CATALOG = 850;
+    private $order_id;
     private $order_body;
     private $sender_id;
     private $receiver_id;
@@ -160,7 +161,7 @@ class Catalog850CreateEdi implements CreateEdi{
             'BEG',
             "00",
             "DS",
-            "PO NUM", // @TODO need to get this from somewhere
+            $this->order_id,
             '',
             "20000101" // @TODO need to get PO date also -- I *think* this is just current date
         ];
