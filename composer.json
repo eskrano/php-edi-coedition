@@ -1,6 +1,6 @@
 {
-    "name": "coedition/edi",
-    "description": "EDI Management for PHP",
+    "name": "eskrano/php-edi",
+    "description": "EDI Management for PHP (from Coedition)",
     "type": "library",
     "license": "MIT",
     "authors": [
